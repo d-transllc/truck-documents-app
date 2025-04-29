@@ -77,18 +77,21 @@ async function fetchTruckDocuments(truckNumber, accessToken) {
         });
 
         const data = await response.json();
-        console.log("Graph response:", data);
 
-        // Filter on client: Asset_x0020_ID might be an array if it's a multi-lookup
+        // 🔍 Debug: Log all returned items to inspect Asset_x0020_ID
+        console.log("Raw Graph response:", JSON.stringify(data.value, null, 2));
+
         const filteredDocs = data.value.filter(doc => {
             const field = doc.fields?.Asset_x0020_ID;
             if (!field) return false;
 
             if (Array.isArray(field)) {
-                return field.some(entry => entry.LookupValue === truckNumber || entry.LookupId == truckNumber);
+                return field.some(entry =>
+                    entry.LookupValue === truckNumber || entry.LookupId == truckNumber
+                );
             }
 
-            return field === truckNumber;
+            return field === truckNumber || field.LookupValue === truckNumber || field.LookupId == truckNumber;
         });
 
         renderDocuments(filteredDocs);
@@ -97,6 +100,7 @@ async function fetchTruckDocuments(truckNumber, accessToken) {
         documentsContainer.innerHTML = `<p style="color: red;">Error loading documents.</p>`;
     }
 }
+
 
 // Display Documents
 function renderDocuments(documents) {
