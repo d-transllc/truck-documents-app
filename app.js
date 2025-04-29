@@ -68,7 +68,7 @@ async function fetchTruckDocuments(truckNumber, accessToken) {
     documentsContainer.innerHTML = `<p>Loading documents for truck ${truckNumber}...</p>`;
 
     try {
-        const url = `https://graph.microsoft.com/v1.0/sites/${siteId}/drives/${driveId}/list/items?expand=fields&$filter=fields/Asset_x0020_ID eq '${truckNumber}'`;
+        const url = `https://graph.microsoft.com/v1.0/sites/${siteId}/drives/${driveId}/list/items?expand=fields`;
 
         const response = await fetch(url, {
             headers: {
@@ -79,8 +79,19 @@ async function fetchTruckDocuments(truckNumber, accessToken) {
         const data = await response.json();
         console.log("Graph response:", data);
 
-        const documents = data.value;
-        renderDocuments(documents);
+        // Filter on client: Asset_x0020_ID might be an array if it's a multi-lookup
+        const filteredDocs = data.value.filter(doc => {
+            const field = doc.fields?.Asset_x0020_ID;
+            if (!field) return false;
+
+            if (Array.isArray(field)) {
+                return field.some(entry => entry.LookupValue === truckNumber || entry.LookupId == truckNumber);
+            }
+
+            return field === truckNumber;
+        });
+
+        renderDocuments(filteredDocs);
     } catch (err) {
         console.error("Error fetching documents:", err);
         documentsContainer.innerHTML = `<p style="color: red;">Error loading documents.</p>`;
