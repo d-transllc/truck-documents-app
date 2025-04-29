@@ -69,19 +69,24 @@ async function fetchTruckDocuments(truckNumber, accessToken) {
 
     try {
         const url = `https://graph.microsoft.com/v1.0/sites/${siteId}/drives/${driveId}/list/items?expand=fields`;
-
         const response = await fetch(url, {
             headers: {
                 Authorization: `Bearer ${accessToken}`
             }
         });
 
+        console.log("Fetch status:", response.status); // ✅ NEW
+
         const data = await response.json();
 
-        // 🔍 Debug: Log all returned items to inspect Asset_x0020_ID
-        console.log("Raw Graph response:", JSON.stringify(data.value, null, 2));
+        // ✅ Debug
+        if (!data || !data.value) {
+            console.warn("Graph returned no value property:", data);
+        } else {
+            console.log("Raw Graph response:", JSON.stringify(data.value, null, 2));
+        }
 
-        const filteredDocs = data.value.filter(doc => {
+        const filteredDocs = data.value?.filter(doc => {
             const field = doc.fields?.Asset_x0020_ID;
             if (!field) return false;
 
@@ -91,16 +96,15 @@ async function fetchTruckDocuments(truckNumber, accessToken) {
                 );
             }
 
-            return field === truckNumber || field.LookupValue === truckNumber || field.LookupId == truckNumber;
-        });
+            return field === truckNumber || field?.LookupValue === truckNumber || field?.LookupId == truckNumber;
+        }) || [];
 
         renderDocuments(filteredDocs);
     } catch (err) {
-        console.error("Error fetching documents:", err);
+        console.error("Error fetching or parsing documents:", err);
         documentsContainer.innerHTML = `<p style="color: red;">Error loading documents.</p>`;
     }
 }
-
 
 // Display Documents
 function renderDocuments(documents) {
