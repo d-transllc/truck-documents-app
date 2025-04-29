@@ -64,18 +64,27 @@ async function signIn() {
 
 // Fetch Truck Documents from SharePoint
 async function fetchTruckDocuments(truckNumber, accessToken) {
-    const response = await fetch(`https://graph.microsoft.com/v1.0/sites/${siteId}/drives/${driveId}/root/children`, {
-        headers: {
-            Authorization: `Bearer ${accessToken}`
-        }
-    });
+    const documentsContainer = document.getElementById('documents');
+    documentsContainer.innerHTML = `<p>Loading documents for truck ${truckNumber}...</p>`;
 
-    const data = await response.json();
+    try {
+        const url = `https://graph.microsoft.com/v1.0/sites/${siteId}/drives/${driveId}/list/items?expand=fields&$filter=fields/Asset_x0020_ID eq '${truckNumber}'`;
 
-    // Filter documents by truck number
-    const documents = data.value.filter(doc => doc.name.includes(truckNumber));
+        const response = await fetch(url, {
+            headers: {
+                Authorization: `Bearer ${accessToken}`
+            }
+        });
 
-    renderDocuments(documents);
+        const data = await response.json();
+        console.log("Graph response:", data);
+
+        const documents = data.value;
+        renderDocuments(documents);
+    } catch (err) {
+        console.error("Error fetching documents:", err);
+        documentsContainer.innerHTML = `<p style="color: red;">Error loading documents.</p>`;
+    }
 }
 
 // Display Documents
@@ -89,9 +98,12 @@ function renderDocuments(documents) {
     }
 
     documents.forEach(doc => {
+        const file = doc.webUrl; // webUrl of the file
+        const name = doc.fields?.FileLeafRef || 'Unnamed Document';
+
         const link = document.createElement('a');
-        link.href = doc.webUrl;
-        link.textContent = doc.name;
+        link.href = file;
+        link.textContent = name;
         link.target = '_blank';
         link.className = 'document';
         container.appendChild(link);
