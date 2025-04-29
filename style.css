@@ -4,14 +4,35 @@ body {
   background: #f5f5f5;
 }
 
-#documents {
-  margin-top: 20px;
+h1 {
+  margin-bottom: 16px;
+}
+
+#signin-btn {
+  padding: 10px 16px;
+  background-color: #0078d4;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  margin-bottom: 20px;
+}
+
+#signin-btn:hover {
+  background-color: #005a9e;
 }
 
 .document {
+  display: block;
   background: white;
   padding: 10px;
   margin-bottom: 10px;
   border: 1px solid #ccc;
   border-radius: 6px;
+  text-decoration: none;
+  color: black;
+}
+
+.document:hover {
+  background: #e0e0e0;
 }

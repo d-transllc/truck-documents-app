@@ -13,6 +13,18 @@ const msalInstance = new msal.PublicClientApplication(msalConfig);
 const siteId = 'ff34a865-1114-4f76-93b3-45b3aec4d2f3,23c86a65-87e3-4faa-93b6-2437e77952b2';   // 👈 Replace this
 const driveId = 'b!Zag0_xQRdk-Ts0WzrsTS82VqyCPjh6pPk7YkN-d5UrIrYIF-HAxgRYPmSOFM6jJZ'; // 👈 Replace this
 
+// DOM Ready
+document.addEventListener('DOMContentLoaded', () => {
+    const signInButton = document.getElementById('signin-btn');
+    signInButton.addEventListener('click', async () => {
+        const truckNumber = getTruckNumberFromURL();
+        const accessToken = await signIn();
+        if (accessToken) {
+            fetchTruckDocuments(truckNumber, accessToken);
+        }
+    });
+});
+
 // On page load
 document.addEventListener('DOMContentLoaded', async () => {
     const truckNumber = getTruckNumberFromURL();
