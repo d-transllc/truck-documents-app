@@ -17,8 +17,19 @@ const driveId = 'b!Zag0_xQRdk-Ts0WzrsTS82VqyCPjh6pPk7YkN-d5UrIrYIF-HAxgRYPmSOFM6
 document.addEventListener('DOMContentLoaded', () => {
     const signInButton = document.getElementById('signin-btn');
     signInButton.addEventListener('click', async () => {
-        const truckNumber = getTruckNumberFromURL();
-        const accessToken = await signIn();
+        const driverName = document.getElementById('driver-name').value.trim();
+        if (!driverName) {
+            alert("Please enter your name.");
+            return;
+        }
+
+        const truckNumber = await getTruckFromDriver(driverName);
+        if (!truckNumber) {
+            alert("Could not find your assigned truck.");
+            return;
+        }
+
+        const accessToken = await signIn(); // MSAL
         if (accessToken) {
             fetchTruckDocuments(truckNumber, accessToken);
         }
@@ -38,6 +49,18 @@ document.addEventListener('DOMContentLoaded', async () => {
 function getTruckNumberFromURL() {
     const params = new URLSearchParams(window.location.search);
     return params.get('truck') || 'unknown';
+}
+
+// Calls your backend, which talks to Samsara
+async function getTruckFromDriver(driverName) {
+    try {
+        const response = await fetch(`https://truckdocs-api.azurewebsites.net/api/getAssignedTruck?driver=${encodeURIComponent(driverName)}`);
+        const data = await response.json();
+        return data.truckNumber; // Make sure your backend returns { truckNumber: "1577" }
+    } catch (error) {
+        console.error("Error fetching truck assignment:", error);
+        return null;
+    }
 }
 
 // MSAL Sign-In
