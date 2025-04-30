@@ -14,12 +14,15 @@ const siteId = 'ff34a865-1114-4f76-93b3-45b3aec4d2f3,23c86a65-87e3-4faa-93b6-243
 const driveId = 'b!Zag0_xQRdk-Ts0WzrsTS82VqyCPjh6pPk7YkN-d5UrIrYIF-HAxgRYPmSOFM6jJZ';
 
 // DOM Ready
-document.addEventListener('DOMContentLoaded', () => {
-    const signInButton = document.getElementById('signin-btn');
+		document.addEventListener('DOMContentLoaded', () => {
+		  const signInButton = document.getElementById('signin-btn');
 
-		signInButton.addEventListener('click', async () => {
+		  signInButton.addEventListener('click', async () => {
+			console.log("Sign in button clicked"); // ✅ debug
 			await signIn();
+		  });
 		});
+
 
         if (!firstName || !lastName) {
             alert("Please enter both your first and last name.");
