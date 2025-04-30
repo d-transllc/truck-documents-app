@@ -1,75 +1,66 @@
 // MSAL Configuration
 const msalConfig = {
     auth: {
-        clientId: '68d4740b-7284-4cd5-a815-9bcb595700dc', // 👈 Replace this
-        authority: 'https://login.microsoftonline.com/e3443973-820a-4d4d-aafd-79c72a25a260', // 👈 Replace this
+        clientId: '68d4740b-7284-4cd5-a815-9bcb595700dc',
+        authority: 'https://login.microsoftonline.com/e3443973-820a-4d4d-aafd-79c72a25a260',
         redirectUri: window.location.origin
     }
 };
 
 const msalInstance = new msal.PublicClientApplication(msalConfig);
 
-// Your SharePoint Site and Drive info
-const siteId = 'ff34a865-1114-4f76-93b3-45b3aec4d2f3,23c86a65-87e3-4faa-93b6-2437e77952b2';   // 👈 Replace this
-const driveId = 'b!Zag0_xQRdk-Ts0WzrsTS82VqyCPjh6pPk7YkN-d5UrIrYIF-HAxgRYPmSOFM6jJZ'; // 👈 Replace this
+// SharePoint Site and Drive Info
+const siteId = 'ff34a865-1114-4f76-93b3-45b3aec4d2f3,23c86a65-87e3-4faa-93b6-2437e77952b2';
+const driveId = 'b!Zag0_xQRdk-Ts0WzrsTS82VqyCPjh6pPk7YkN-d5UrIrYIF-HAxgRYPmSOFM6jJZ';
 
 // DOM Ready
 document.addEventListener('DOMContentLoaded', () => {
     const signInButton = document.getElementById('signin-btn');
+
     signInButton.addEventListener('click', async () => {
-        const driverName = document.getElementById('driver-name').value.trim();
-        if (!driverName) {
-            alert("Please enter your name.");
+        const firstName = document.getElementById('first-name').value.trim();
+        const lastName = document.getElementById('last-name').value.trim();
+
+        if (!firstName || !lastName) {
+            alert("Please enter both your first and last name.");
             return;
         }
 
+        const driverName = `${firstName} ${lastName}`;
         const truckNumber = await getTruckFromDriver(driverName);
+
         if (!truckNumber) {
             alert("Could not find your assigned truck.");
             return;
         }
 
-        const accessToken = await signIn(); // MSAL
+        const accessToken = await signIn();
         if (accessToken) {
             fetchTruckDocuments(truckNumber, accessToken);
         }
     });
 });
 
-// On page load
-document.addEventListener('DOMContentLoaded', async () => {
-    const truckNumber = getTruckNumberFromURL();
-    const accessToken = await signIn();
-    if (accessToken) {
-        fetchTruckDocuments(truckNumber, accessToken);
-    }
-});
-
-// Helper: Get Truck Number from URL
-function getTruckNumberFromURL() {
-    const params = new URLSearchParams(window.location.search);
-    return params.get('truck') || 'unknown';
-}
-
-// Calls your backend, which talks to Samsara
+// Azure Function to get assigned truck
 async function getTruckFromDriver(driverName) {
     try {
         const response = await fetch(`https://truckdocs-api.azurewebsites.net/api/getAssignedTruck?driver=${encodeURIComponent(driverName)}`);
         const data = await response.json();
-        return data.truckNumber; // Make sure your backend returns { truckNumber: "1577" }
+        return data.truckNumber;
     } catch (error) {
         console.error("Error fetching truck assignment:", error);
         return null;
     }
 }
 
-// MSAL Sign-In
+// Microsoft Sign-In
 async function signIn() {
     try {
         const loginResponse = await msalInstance.loginPopup({
             scopes: ["Sites.Read.All"]
         });
-        console.log("Login Success", loginResponse);
+
+        console.log("Login success:", loginResponse);
         const account = loginResponse.account;
         msalInstance.setActiveAccount(account);
 
@@ -80,12 +71,12 @@ async function signIn() {
 
         return tokenResponse.accessToken;
     } catch (error) {
-        console.error("Login Failed", error);
+        console.error("Login failed:", error);
         return null;
     }
 }
 
-// Fetch Truck Documents from SharePoint
+// Fetch documents from SharePoint
 async function fetchTruckDocuments(truckNumber, accessToken) {
     const documentsContainer = document.getElementById('documents');
     documentsContainer.innerHTML = `<p>Loading documents for truck ${truckNumber}...</p>`;
@@ -98,16 +89,7 @@ async function fetchTruckDocuments(truckNumber, accessToken) {
             }
         });
 
-        console.log("Fetch status:", response.status); // ✅ NEW
-
         const data = await response.json();
-
-        // ✅ Debug
-        if (!data || !data.value) {
-            console.warn("Graph returned no value property:", data);
-        } else {
-            console.log("Raw Graph response:", JSON.stringify(data.value, null, 2));
-        }
 
         const filteredDocs = data.value?.filter(doc => {
             const field = doc.fields?.Asset_x0020_ID;
@@ -129,7 +111,7 @@ async function fetchTruckDocuments(truckNumber, accessToken) {
     }
 }
 
-// Display Documents
+// Render documents
 function renderDocuments(documents) {
     const container = document.getElementById('documents');
     container.innerHTML = '';
@@ -140,7 +122,7 @@ function renderDocuments(documents) {
     }
 
     documents.forEach(doc => {
-        const file = doc.webUrl; // webUrl of the file
+        const file = doc.webUrl;
         const name = doc.fields?.FileLeafRef || 'Unnamed Document';
 
         const link = document.createElement('a');

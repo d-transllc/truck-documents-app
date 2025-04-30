@@ -10,12 +10,16 @@
   <div id="app">
     <h1>Digital Truck Book</h1>
 
-    <div id="login-section" style="margin-bottom: 1rem;">
-      <label for="driver-name">Enter your name:</label><br />
-      <input type="text" id="driver-name" placeholder="e.g. John Smith" style="margin-top: 0.5rem; padding: 0.5rem; width: 250px;" />
-      <br />
-      <button id="signin-btn" style="margin-top: 0.5rem; padding: 0.5rem 1rem;">Sign In & Load Documents</button>
-    </div>
+		<div id="login-section" style="margin-bottom: 1rem;">
+		  <label for="first-name">First Name:</label><br />
+		  <input type="text" id="first-name" placeholder="e.g. John" style="margin-top: 0.5rem; padding: 0.5rem; width: 250px;" /><br />
+
+		  <label for="last-name" style="margin-top: 1rem;">Last Name:</label><br />
+		  <input type="text" id="last-name" placeholder="e.g. Smith" style="margin-top: 0.5rem; padding: 0.5rem; width: 250px;" /><br />
+
+		  <button id="signin-btn" style="margin-top: 0.5rem; padding: 0.5rem 1rem;">Get Truck Documents</button>
+		</div>
+
 
     <div id="documents"></div>
   </div>
