@@ -1,22 +1,25 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
+  <meta charset="UTF-8" />
   <title>Truck Documents</title>
-  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="style.css" />
   <script src="https://alcdn.msauth.net/browser/2.32.0/js/msal-browser.min.js"></script> <!-- MSAL -->
 </head>
 <body>
   <div id="app">
-    <h1>Truck Documents</h1>
-	
-	<div id="login-section">
-		<input type="text" id="driver-name" placeholder="Enter your name" />
-		<button id="signin-btn">Sign In</button>
-	</div>
-	
+    <h1>Digital Truck Book</h1>
+
+    <div id="login-section" style="margin-bottom: 1rem;">
+      <label for="driver-name">Enter your name:</label><br />
+      <input type="text" id="driver-name" placeholder="e.g. John Smith" style="margin-top: 0.5rem; padding: 0.5rem; width: 250px;" />
+      <br />
+      <button id="signin-btn" style="margin-top: 0.5rem; padding: 0.5rem 1rem;">Sign In & Load Documents</button>
+    </div>
+
     <div id="documents"></div>
   </div>
+
   <script src="app.js"></script>
 </body>
 </html>
