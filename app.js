@@ -1,10 +1,10 @@
 // MSAL Configuration
 const msalConfig = {
-    auth: {
-        clientId: '68d4740b-7284-4cd5-a815-9bcb595700dc',
-        authority: 'https://login.microsoftonline.com/e3443973-820a-4d4d-aafd-79c72a25a260',
-        redirectUri: window.location.origin
-    }
+  auth: {
+    clientId: '68d4740b-7284-4cd5-a815-9bcb595700dc',
+    authority: 'https://login.microsoftonline.com/e3443973-820a-4d4d-aafd-79c72a25a260',
+    redirectUri: window.location.origin
+  }
 };
 
 const msalInstance = new msal.PublicClientApplication(msalConfig);
@@ -14,147 +14,121 @@ const siteId = 'ff34a865-1114-4f76-93b3-45b3aec4d2f3,23c86a65-87e3-4faa-93b6-243
 const driveId = 'b!Zag0_xQRdk-Ts0WzrsTS82VqyCPjh6pPk7YkN-d5UrIrYIF-HAxgRYPmSOFM6jJZ';
 
 // DOM Ready
-		document.addEventListener('DOMContentLoaded', () => {
-		  const signInButton = document.getElementById('signin-btn');
+document.addEventListener('DOMContentLoaded', () => {
+  const signInButton = document.getElementById('signin-btn');
 
-		  signInButton.addEventListener('click', async () => {
-			console.log("Sign in button clicked"); // ✅ debug
-			await signIn();
-		  });
-		});
-
-
-        if (!firstName || !lastName) {
-            alert("Please enter both your first and last name.");
-            return;
-        }
-
-        const driverName = `${firstName} ${lastName}`;
-        const truckNumber = await getTruckFromDriver(driverName);
-
-        if (!truckNumber) {
-            alert("Could not find your assigned truck.");
-            return;
-        }
-
-        const accessToken = await signIn();
-        if (accessToken) {
-            fetchTruckDocuments(truckNumber, accessToken);
-        }
-    });
+  signInButton.addEventListener('click', async () => {
+    console.log("Sign in button clicked");
+    await signIn();
+  });
 });
-
-// Azure Function to get assigned truck
-async function getTruckFromDriver(driverName) {
-    try {
-        const response = await fetch(`https://truckdocs-api.azurewebsites.net/api/getAssignedTruck?driver=${encodeURIComponent(driverName)}`);
-        const data = await response.json();
-
-        console.log("Truck lookup raw response:", data); // 👈 this will reveal the actual structure
-        return data.truckNumber; // may need to change to data.data.truckNumber
-    } catch (error) {
-        console.error("Error fetching truck assignment:", error);
-        return null;
-    }
-}
-
-
 
 // Microsoft Sign-In
 async function signIn() {
-    try {
-        const loginResponse = await msalInstance.loginPopup({
-            scopes: ["Sites.Read.All", "User.Read"]
-        });
+  try {
+    console.log("Launching MSAL login popup...");
 
-        console.log("Login success:", loginResponse);
+    const loginResponse = await msalInstance.loginPopup({
+      scopes: ["Sites.Read.All", "User.Read"]
+    });
 
-        const account = loginResponse.account;
-        msalInstance.setActiveAccount(account);
+    console.log("Login success:", loginResponse);
 
-        // Get access token
-        const tokenResponse = await msalInstance.acquireTokenSilent({
-            scopes: ["Sites.Read.All", "User.Read"],
-            account: account
-        });
+    const account = loginResponse.account;
+    msalInstance.setActiveAccount(account);
 
-        const accessToken = tokenResponse.accessToken;
+    const tokenResponse = await msalInstance.acquireTokenSilent({
+      scopes: ["Sites.Read.All", "User.Read"],
+      account: account
+    });
 
-        // Extract user's display name (e.g., "John Smith")
-        const fullName = account.name;
-        console.log("Signed in as:", fullName);
+    const accessToken = tokenResponse.accessToken;
 
-        // 🔁 Lookup assigned truck by full name
-        const truckNumber = await getTruckFromDriver(fullName);
+    // Extract user's full name
+    const fullName = account.name;
+    console.log("Signed in as:", fullName);
 
-        if (!truckNumber || truckNumber === "Unknown") {
-            alert("Could not find your assigned truck.");
-            return null;
-        }
+    const truckNumber = await getTruckFromDriver(fullName);
 
-        fetchTruckDocuments(truckNumber, accessToken);
-        return accessToken;
-    } catch (error) {
-        console.error("Login failed:", error);
-        return null;
+    if (!truckNumber || truckNumber === "Unknown") {
+      alert("Could not find your assigned truck.");
+      return;
     }
+
+    fetchTruckDocuments(truckNumber, accessToken);
+  } catch (error) {
+    console.error("Login failed:", error);
+  }
 }
 
+// Azure Function to get assigned truck
+async function getTruckFromDriver(driverName) {
+  try {
+    const response = await fetch(`https://truckdocs-api.azurewebsites.net/api/getAssignedTruck?driver=${encodeURIComponent(driverName)}`);
+    const data = await response.json();
 
-// Fetch documents from SharePoint
+    console.log("Truck lookup raw response:", data);
+    return data.truckNumber;
+  } catch (error) {
+    console.error("Error fetching truck assignment:", error);
+    return null;
+  }
+}
+
+// Fetch SharePoint documents
 async function fetchTruckDocuments(truckNumber, accessToken) {
-    const documentsContainer = document.getElementById('documents');
-    documentsContainer.innerHTML = `<p>Loading documents for truck ${truckNumber}...</p>`;
+  const documentsContainer = document.getElementById('documents');
+  documentsContainer.innerHTML = `<p>Loading documents for truck ${truckNumber}...</p>`;
 
-    try {
-        const url = `https://graph.microsoft.com/v1.0/sites/${siteId}/drives/${driveId}/list/items?expand=fields`;
-        const response = await fetch(url, {
-            headers: {
-                Authorization: `Bearer ${accessToken}`
-            }
-        });
+  try {
+    const url = `https://graph.microsoft.com/v1.0/sites/${siteId}/drives/${driveId}/list/items?expand=fields`;
+    const response = await fetch(url, {
+      headers: {
+        Authorization: `Bearer ${accessToken}`
+      }
+    });
 
-        const data = await response.json();
+    const data = await response.json();
 
-        const filteredDocs = data.value?.filter(doc => {
-            const field = doc.fields?.Asset_x0020_ID;
-            if (!field) return false;
+    const filteredDocs = data.value?.filter(doc => {
+      const field = doc.fields?.Asset_x0020_ID;
+      if (!field) return false;
 
-            if (Array.isArray(field)) {
-                return field.some(entry =>
-                    entry.LookupValue === truckNumber || entry.LookupId == truckNumber
-                );
-            }
+      if (Array.isArray(field)) {
+        return field.some(entry =>
+          entry.LookupValue === truckNumber || entry.LookupId == truckNumber
+        );
+      }
 
-            return field === truckNumber || field?.LookupValue === truckNumber || field?.LookupId == truckNumber;
-        }) || [];
+      return field === truckNumber || field?.LookupValue === truckNumber || field?.LookupId == truckNumber;
+    }) || [];
 
-        renderDocuments(filteredDocs);
-    } catch (err) {
-        console.error("Error fetching or parsing documents:", err);
-        documentsContainer.innerHTML = `<p style="color: red;">Error loading documents.</p>`;
-    }
+    renderDocuments(filteredDocs);
+  } catch (err) {
+    console.error("Error fetching or parsing documents:", err);
+    documentsContainer.innerHTML = `<p style="color: red;">Error loading documents.</p>`;
+  }
 }
 
 // Render documents
 function renderDocuments(documents) {
-    const container = document.getElementById('documents');
-    container.innerHTML = '';
+  const container = document.getElementById('documents');
+  container.innerHTML = '';
 
-    if (documents.length === 0) {
-        container.innerHTML = '<p>No documents found for this truck.</p>';
-        return;
-    }
+  if (documents.length === 0) {
+    container.innerHTML = '<p>No documents found for this truck.</p>';
+    return;
+  }
 
-    documents.forEach(doc => {
-        const file = doc.webUrl;
-        const name = doc.fields?.FileLeafRef || 'Unnamed Document';
+  documents.forEach(doc => {
+    const file = doc.webUrl;
+    const name = doc.fields?.FileLeafRef || 'Unnamed Document';
 
-        const link = document.createElement('a');
-        link.href = file;
-        link.textContent = name;
-        link.target = '_blank';
-        link.className = 'document';
-        container.appendChild(link);
-    });
+    const link = document.createElement('a');
+    link.href = file;
+    link.textContent = name;
+    link.target = '_blank';
+    link.className = 'document';
+    container.appendChild(link);
+  });
 }
