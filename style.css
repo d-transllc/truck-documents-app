@@ -1,38 +1,38 @@
 body {
   font-family: Arial, sans-serif;
-  margin: 20px;
-  background: #f5f5f5;
-  color: #333;
+  margin: 40px;
+  background-color: #f5f5f5;
 }
 
 #app {
   max-width: 600px;
-  margin: 0 auto;
-  background: white;
+  background: #ffffff;
   padding: 24px;
   border-radius: 8px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+  margin: 0 auto;
 }
 
 h1 {
-  margin-bottom: 16px;
-  font-size: 1.8rem;
   color: #0078d4;
+  margin-bottom: 20px;
+}
+
+.form-row {
+  margin-bottom: 16px;
 }
 
 label {
-  font-weight: bold;
   display: block;
   margin-bottom: 6px;
+  font-weight: bold;
 }
 
-#driver-name {
+input[type="text"] {
   padding: 10px;
   width: 100%;
   max-width: 400px;
   box-sizing: border-box;
-  font-size: 1rem;
-  margin-bottom: 12px;
   border: 1px solid #ccc;
   border-radius: 4px;
 }
@@ -44,6 +44,7 @@ label {
   border: none;
   border-radius: 4px;
   cursor: pointer;
+  font-weight: bold;
 }
 
 #signin-btn:hover {
