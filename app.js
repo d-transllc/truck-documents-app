@@ -17,9 +17,9 @@ const driveId = 'b!Zag0_xQRdk-Ts0WzrsTS82VqyCPjh6pPk7YkN-d5UrIrYIF-HAxgRYPmSOFM6
 document.addEventListener('DOMContentLoaded', () => {
     const signInButton = document.getElementById('signin-btn');
 
-    signInButton.addEventListener('click', async () => {
-        const firstName = document.getElementById('first-name').value.trim();
-        const lastName = document.getElementById('last-name').value.trim();
+		signInButton.addEventListener('click', async () => {
+			await signIn();
+		});
 
         if (!firstName || !lastName) {
             alert("Please enter both your first and last name.");
@@ -47,9 +47,8 @@ async function getTruckFromDriver(driverName) {
         const response = await fetch(`https://truckdocs-api.azurewebsites.net/api/getAssignedTruck?driver=${encodeURIComponent(driverName)}`);
         const data = await response.json();
 
-        console.log("Truck lookup response:", data); // 🔍 LOG IT
-
-        return data.truckNumber;
+        console.log("Truck lookup raw response:", data); // 👈 this will reveal the actual structure
+        return data.truckNumber; // may need to change to data.data.truckNumber
     } catch (error) {
         console.error("Error fetching truck assignment:", error);
         return null;
@@ -57,28 +56,47 @@ async function getTruckFromDriver(driverName) {
 }
 
 
+
 // Microsoft Sign-In
 async function signIn() {
     try {
         const loginResponse = await msalInstance.loginPopup({
-            scopes: ["Sites.Read.All"]
+            scopes: ["Sites.Read.All", "User.Read"]
         });
 
         console.log("Login success:", loginResponse);
+
         const account = loginResponse.account;
         msalInstance.setActiveAccount(account);
 
+        // Get access token
         const tokenResponse = await msalInstance.acquireTokenSilent({
-            scopes: ["Sites.Read.All"],
+            scopes: ["Sites.Read.All", "User.Read"],
             account: account
         });
 
-        return tokenResponse.accessToken;
+        const accessToken = tokenResponse.accessToken;
+
+        // Extract user's display name (e.g., "John Smith")
+        const fullName = account.name;
+        console.log("Signed in as:", fullName);
+
+        // 🔁 Lookup assigned truck by full name
+        const truckNumber = await getTruckFromDriver(fullName);
+
+        if (!truckNumber || truckNumber === "Unknown") {
+            alert("Could not find your assigned truck.");
+            return null;
+        }
+
+        fetchTruckDocuments(truckNumber, accessToken);
+        return accessToken;
     } catch (error) {
         console.error("Login failed:", error);
         return null;
     }
 }
+
 
 // Fetch documents from SharePoint
 async function fetchTruckDocuments(truckNumber, accessToken) {
