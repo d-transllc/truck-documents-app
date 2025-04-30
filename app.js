@@ -46,12 +46,16 @@ async function getTruckFromDriver(driverName) {
     try {
         const response = await fetch(`https://truckdocs-api.azurewebsites.net/api/getAssignedTruck?driver=${encodeURIComponent(driverName)}`);
         const data = await response.json();
+
+        console.log("Truck lookup response:", data); // 🔍 LOG IT
+
         return data.truckNumber;
     } catch (error) {
         console.error("Error fetching truck assignment:", error);
         return null;
     }
 }
+
 
 // Microsoft Sign-In
 async function signIn() {
