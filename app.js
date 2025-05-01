@@ -10,8 +10,8 @@ const msalConfig = {
 const msalInstance = new msal.PublicClientApplication(msalConfig);
 
 // SharePoint Site and Drive Info
-const siteId = 'ff34a865-1114-4f76-93b3-45b3aec4d2f3,23c86a65-87e3-4faa-93b6-2437e77952b2';
-const driveId = 'b!Zag0_xQRdk-Ts0WzrsTS82VqyCPjh6pPk7YkN-d5UrIrYIF-HAxgRYPmSOFM6jJZ';
+const siteId = 'dtranslogistics.sharepoint.com,9674680e-afb2-4657-9c35-eeaef132d0ae,a6bbfa8f-3556-4a16-a42b-9d61c176aeea';
+const driveId = 'b!Dmh0lrKvV0acNe6u8TLQro_6u6ZWNRZKpCudYcF2ruoGU9HaWtzKSqyoi4uMNCzf';
 
 // DOM Ready
 document.addEventListener('DOMContentLoaded', () => {
