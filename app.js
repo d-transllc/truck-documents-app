@@ -117,7 +117,7 @@ async function fetchTruckDocuments(truckNumber, accessToken) {
         )
       );
 
-      const isForAllAssets = forAllAssets === "Yes";
+      const isForAllAssets = forAllAssets === true;
 
       return matchesTruck || isForAllAssets;
     }) || [];
