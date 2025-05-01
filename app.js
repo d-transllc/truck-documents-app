@@ -90,7 +90,7 @@ async function fetchTruckDocuments(truckNumber, accessToken) {
 
 		const filteredDocs = data.value?.filter(doc => {
 		  const assetField = doc.fields?.Asset_x0020_ID;
-		  const forAllAssets = doc.fields?.ForAllAssets;
+		  const forAllAssets = doc.fields?.For_x0020_All_x0020_Assets;
 
 		  const matchesTruck = (
 			assetField === truckNumber ||
