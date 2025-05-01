@@ -88,12 +88,18 @@ async function fetchTruckDocuments(truckNumber, accessToken) {
       }
     });
 
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error("Fetch failed:", errorText);
-      documentsContainer.innerHTML = `<p style="color: red;">Error loading documents (HTTP ${response.status}).</p>`;
-      return;
-    }
+	console.log("Graph request URL:", url);
+	console.log("Access token starts with:", accessToken?.slice(0, 20));
+	console.log("Fetch response status:", response.status);
+
+
+	if (!response.ok) {
+	  const errorText = await response.text();
+	  console.error("Fetch failed:", errorText);
+	  documentsContainer.innerHTML = `<p style="color: red;">Error loading documents (HTTP ${response.status})</p>`;
+	  return;
+	}
+
 
     const data = await response.json();
 
