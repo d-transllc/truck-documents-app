@@ -88,20 +88,26 @@ async function fetchTruckDocuments(truckNumber, accessToken) {
       }
     });
 
-    const data = await response.json();
+		const filteredDocs = data.value?.filter(doc => {
+		  const assetField = doc.fields?.Asset_x0020_ID;
+		  const forAllAssets = doc.fields?.ForAllAssets;
 
-    const filteredDocs = data.value?.filter(doc => {
-      const field = doc.fields?.Asset_x0020_ID;
-      if (!field) return false;
+		  const matchesTruck = (
+			assetField === truckNumber ||
+			assetField?.LookupValue === truckNumber ||
+			assetField?.LookupId == truckNumber ||
+			(
+			  Array.isArray(assetField) &&
+			  assetField.some(entry =>
+				entry.LookupValue === truckNumber || entry.LookupId == truckNumber
+			  )
+			)
+		  );
 
-      if (Array.isArray(field)) {
-        return field.some(entry =>
-          entry.LookupValue === truckNumber || entry.LookupId == truckNumber
-        );
-      }
+  const isForAllAssets = forAllAssets === "Yes";
 
-      return field === truckNumber || field?.LookupValue === truckNumber || field?.LookupId == truckNumber;
-    }) || [];
+  return matchesTruck || isForAllAssets;
+}) || [];
 
     renderDocuments(filteredDocs);
   } catch (err) {
