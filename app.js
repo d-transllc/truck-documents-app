@@ -105,6 +105,11 @@ async function fetchTruckDocuments(truckNumber, accessToken) {
 	  const assetField = doc.fields?.Asset_x0020_ID;
 	  const forAllAssets = doc.fields?.For_x0020_All_x0020_Assets;
 
+	  console.log("Fields for doc:", doc.fields);{
+		name: doc.fields?.FileLeafRef,
+		truck: assetField,
+		forAllAssets
+	  });
 
 	  const matchesTruck = (
 		assetField === truckNumber ||
