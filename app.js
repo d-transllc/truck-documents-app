@@ -44,7 +44,6 @@ async function signIn() {
 
     const accessToken = tokenResponse.accessToken;
 
-    // Extract user's full name
     const fullName = account.name;
     console.log("Signed in as:", fullName);
 
@@ -66,7 +65,6 @@ async function getTruckFromDriver(driverName) {
   try {
     const response = await fetch(`https://truckdocs-api.azurewebsites.net/api/getAssignedTruck?driver=${encodeURIComponent(driverName)}`);
     const data = await response.json();
-
     console.log("Truck lookup raw response:", data);
     return data.truckNumber;
   } catch (error) {
@@ -100,7 +98,7 @@ async function fetchTruckDocuments(truckNumber, accessToken) {
       return;
     }
 
-    // ✅ This was missing in your last version
+    // ✅ THIS LINE DEFINES `data` — DO NOT REMOVE
     const data = await response.json();
 
     const filteredDocs = data.value?.filter(doc => {
@@ -130,7 +128,6 @@ async function fetchTruckDocuments(truckNumber, accessToken) {
     documentsContainer.innerHTML = `<p style="color: red;">Error loading documents.</p>`;
   }
 }
-
 
 // Render documents
 function renderDocuments(documents) {
