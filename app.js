@@ -101,26 +101,34 @@ async function fetchTruckDocuments(truckNumber, accessToken) {
     // ✅ THIS LINE DEFINES `data` — DO NOT REMOVE
     const data = await response.json();
 
-    const filteredDocs = data.value?.filter(doc => {
-      const assetField = doc.fields?.Asset_x0020_ID;
-      const forAllAssets = doc.fields?.For_x0020_All_x0020_Assets;
+	const filteredDocs = data.value?.filter(doc => {
+	  const assetField = doc.fields?.Asset_x0020_ID;
+	  const forAllAssets = doc.fields?.For_x0020_All_x0020_Assets;
 
-      const matchesTruck = (
-        assetField === truckNumber ||
-        assetField?.LookupValue === truckNumber ||
-        assetField?.LookupId == truckNumber ||
-        (
-          Array.isArray(assetField) &&
-          assetField.some(entry =>
-            entry.LookupValue === truckNumber || entry.LookupId == truckNumber
-          )
-        )
-      );
+	  console.log({
+		name: doc.fields?.FileLeafRef,
+		truck: assetField,
+		forAllAssets
+	  });
 
-      const isForAllAssets = forAllAssets === true;
+	  const matchesTruck = (
+		assetField === truckNumber ||
+		assetField?.LookupValue === truckNumber ||
+		assetField?.LookupId == truckNumber ||
+		(
+		  Array.isArray(assetField) &&
+		  assetField.some(entry =>
+			entry.LookupValue === truckNumber || entry.LookupId == truckNumber
+		  )
+		)
+	  );
 
-      return matchesTruck || isForAllAssets;
-    }) || [];
+	  const isForAllAssets = forAllAssets === true;
+
+	  return matchesTruck || isForAllAssets;
+	}) || [];
+
+
 
     renderDocuments(filteredDocs);
   } catch (err) {
