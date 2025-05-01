@@ -88,27 +88,35 @@ async function fetchTruckDocuments(truckNumber, accessToken) {
       }
     });
 
-		const filteredDocs = data.value?.filter(doc => {
-		  const assetField = doc.fields?.Asset_x0020_ID;
-		  const forAllAssets = doc.fields?.For_x0020_All_x0020_Assets;
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error("Fetch failed:", errorText);
+      documentsContainer.innerHTML = `<p style="color: red;">Error loading documents (HTTP ${response.status}).</p>`;
+      return;
+    }
 
-		  const matchesTruck = (
-			assetField === truckNumber ||
-			assetField?.LookupValue === truckNumber ||
-			assetField?.LookupId == truckNumber ||
-			(
-			  Array.isArray(assetField) &&
-			  assetField.some(entry =>
-				entry.LookupValue === truckNumber || entry.LookupId == truckNumber
-			  )
-			)
-		  );
+    const data = await response.json();
 
-		  const isForAllAssets = forAllAssets === "Yes";
+    const filteredDocs = data.value?.filter(doc => {
+      const assetField = doc.fields?.Asset_x0020_ID;
+      const forAllAssets = doc.fields?.For_x0020_All_x0020_Assets;
 
-		  return matchesTruck || isForAllAssets;
-		}) || [];
+      const matchesTruck = (
+        assetField === truckNumber ||
+        assetField?.LookupValue === truckNumber ||
+        assetField?.LookupId == truckNumber ||
+        (
+          Array.isArray(assetField) &&
+          assetField.some(entry =>
+            entry.LookupValue === truckNumber || entry.LookupId == truckNumber
+          )
+        )
+      );
 
+      const isForAllAssets = forAllAssets === "Yes";
+
+      return matchesTruck || isForAllAssets;
+    }) || [];
 
     renderDocuments(filteredDocs);
   } catch (err) {
