@@ -104,10 +104,11 @@ async function fetchTruckDocuments(truckNumber, accessToken) {
 			)
 		  );
 
-  const isForAllAssets = forAllAssets === "Yes";
+		  const isForAllAssets = forAllAssets === "Yes";
 
-  return matchesTruck || isForAllAssets;
-}) || [];
+		  return matchesTruck || isForAllAssets;
+		}) || [];
+
 
     renderDocuments(filteredDocs);
   } catch (err) {
