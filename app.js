@@ -3,7 +3,7 @@ const msalConfig = {
   auth: {
     clientId: '68d4740b-7284-4cd5-a815-9bcb595700dc',
     authority: 'https://login.microsoftonline.com/e3443973-820a-4d4d-aafd-79c72a25a260',
-    redirectUri: window.location.origin
+    redirectUri: 'https://d-transllc.github.io/truck-documents-app/'
   }
 };
 const msalInstance = new msal.PublicClientApplication(msalConfig);
