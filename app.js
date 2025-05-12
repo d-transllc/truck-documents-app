@@ -24,18 +24,21 @@ document.addEventListener('DOMContentLoaded', () => {
     if (!navigator.onLine) {
       loadCachedDocuments();
     } else {
-      await msalInstance.loginRedirect({
-        scopes: ["Sites.Read.All", "User.Read"]
-      });
+      await signIn();
     }
   });
+});
 
-  // Handle redirect login completion
-  msalInstance.handleRedirectPromise().then(async (response) => {
-    const account = response?.account || msalInstance.getAllAccounts()[0];
-    if (!account) return;
+// Microsoft Sign-In
+async function signIn() {
+  try {
+    const loginResponse = await msalInstance.loginPopup({
+      scopes: ["Sites.Read.All", "User.Read"]
+    });
 
+    const account = loginResponse.account;
     msalInstance.setActiveAccount(account);
+
     const tokenResponse = await msalInstance.acquireTokenSilent({
       scopes: ["Sites.Read.All", "User.Read"],
       account
@@ -51,10 +54,13 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     fetchTruckDocuments(truckNumber, accessToken);
-  });
-});
+  } catch (error) {
+    console.error("Login failed:", error);
+    alert("Login failed. Check console for details.");
+  }
+}
 
-// Azure Function lookup
+// Azure Function: Get truck from driver name
 async function getTruckFromDriver(driverName) {
   try {
     const response = await fetch(`https://truckdocs-api.azurewebsites.net/api/getAssignedTruck?driver=${encodeURIComponent(driverName)}`);
@@ -76,6 +82,13 @@ async function fetchTruckDocuments(truckNumber, accessToken) {
     const response = await fetch(url, {
       headers: { Authorization: `Bearer ${accessToken}` }
     });
+
+    if (!response.ok) {
+      const errText = await response.text();
+      console.error("Graph error:", errText);
+      container.innerHTML = `<p style="color: red;">Error loading documents (HTTP ${response.status})</p>`;
+      return;
+    }
 
     const data = await response.json();
     const filteredDocs = data.value?.filter(doc => {
@@ -101,7 +114,7 @@ async function fetchTruckDocuments(truckNumber, accessToken) {
   }
 }
 
-// Render docs (live or cached)
+// Render documents
 function renderDocuments(docs) {
   const container = document.getElementById('documents');
   container.innerHTML = '';
@@ -128,7 +141,7 @@ function renderDocuments(docs) {
   });
 }
 
-// Cache PDFs to IndexedDB
+// Cache to IndexedDB
 async function cacheDocuments(documents, accessToken) {
   const db = await openDB();
   const tx = db.transaction('docs', 'readwrite');
@@ -155,7 +168,7 @@ async function cacheDocuments(documents, accessToken) {
   db.close();
 }
 
-// Load from local cache (offline)
+// Load from cache
 async function loadCachedDocuments() {
   const db = await openDB();
   const tx = db.transaction('docs', 'readonly');
@@ -168,7 +181,7 @@ async function loadCachedDocuments() {
   db.close();
 }
 
-// IndexedDB setup
+// IndexedDB helper
 async function openDB() {
   return new Promise((resolve, reject) => {
     const req = indexedDB.open('truckDocs', 1);
