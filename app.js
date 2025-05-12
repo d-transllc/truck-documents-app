@@ -22,24 +22,20 @@ document.addEventListener('DOMContentLoaded', () => {
 
   document.getElementById('signin-btn').addEventListener('click', async () => {
     if (!navigator.onLine) {
-      console.warn("Offline mode: loading cached documents");
       loadCachedDocuments();
     } else {
-      await signIn();
+      await msalInstance.loginRedirect({
+        scopes: ["Sites.Read.All", "User.Read"]
+      });
     }
   });
-});
 
-// MSAL Sign-In → Samsara → SharePoint
-async function signIn() {
-  try {
-    const loginResponse = await msalInstance.loginPopup({
-      scopes: ["Sites.Read.All", "User.Read"]
-    });
+  // Handle redirect login completion
+  msalInstance.handleRedirectPromise().then(async (response) => {
+    const account = response?.account || msalInstance.getAllAccounts()[0];
+    if (!account) return;
 
-    const account = loginResponse.account;
     msalInstance.setActiveAccount(account);
-
     const tokenResponse = await msalInstance.acquireTokenSilent({
       scopes: ["Sites.Read.All", "User.Read"],
       account
@@ -47,18 +43,16 @@ async function signIn() {
 
     const accessToken = tokenResponse.accessToken;
     const fullName = account.name;
-    const truckNumber = await getTruckFromDriver(fullName);
 
+    const truckNumber = await getTruckFromDriver(fullName);
     if (!truckNumber || truckNumber === "Unknown") {
       alert("Could not find your assigned truck.");
       return;
     }
 
     fetchTruckDocuments(truckNumber, accessToken);
-  } catch (error) {
-    console.error("Login failed:", error);
-  }
-}
+  });
+});
 
 // Azure Function lookup
 async function getTruckFromDriver(driverName) {
@@ -161,7 +155,7 @@ async function cacheDocuments(documents, accessToken) {
   db.close();
 }
 
-// Load offline
+// Load from local cache (offline)
 async function loadCachedDocuments() {
   const db = await openDB();
   const tx = db.transaction('docs', 'readonly');
