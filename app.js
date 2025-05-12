@@ -14,18 +14,13 @@ const driveId = 'b!Dmh0lrKvV0acNe6u8TLQro_6u6ZWNRZKpCudYcF2ruoGU9HaWtzKSqyoi4uMN
 
 // DOM Ready
 document.addEventListener('DOMContentLoaded', () => {
-  const button = document.getElementById('signin-btn');
   const banner = document.getElementById('offline-banner');
-
-  const updateBanner = () => {
-    banner.style.display = navigator.onLine ? 'none' : 'block';
-  };
-
+  const updateBanner = () => banner.style.display = navigator.onLine ? 'none' : 'block';
   updateBanner();
   window.addEventListener('online', updateBanner);
   window.addEventListener('offline', updateBanner);
 
-  button.addEventListener('click', async () => {
+  document.getElementById('signin-btn').addEventListener('click', async () => {
     if (!navigator.onLine) {
       console.warn("Offline mode: loading cached documents");
       loadCachedDocuments();
@@ -35,7 +30,7 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 });
 
-// Sign in and fetch documents
+// MSAL Sign-In → Samsara → SharePoint
 async function signIn() {
   try {
     const loginResponse = await msalInstance.loginPopup({
@@ -52,8 +47,8 @@ async function signIn() {
 
     const accessToken = tokenResponse.accessToken;
     const fullName = account.name;
-
     const truckNumber = await getTruckFromDriver(fullName);
+
     if (!truckNumber || truckNumber === "Unknown") {
       alert("Could not find your assigned truck.");
       return;
@@ -65,7 +60,7 @@ async function signIn() {
   }
 }
 
-// Azure Function: Get Truck #
+// Azure Function lookup
 async function getTruckFromDriver(driverName) {
   try {
     const response = await fetch(`https://truckdocs-api.azurewebsites.net/api/getAssignedTruck?driver=${encodeURIComponent(driverName)}`);
@@ -77,7 +72,7 @@ async function getTruckFromDriver(driverName) {
   }
 }
 
-// Fetch & Cache Truck Docs
+// Fetch from SharePoint + cache
 async function fetchTruckDocuments(truckNumber, accessToken) {
   const container = document.getElementById('documents');
   container.innerHTML = `<p>Loading documents for truck ${truckNumber}...</p>`;
@@ -107,12 +102,12 @@ async function fetchTruckDocuments(truckNumber, accessToken) {
     renderDocuments(filteredDocs);
     await cacheDocuments(filteredDocs, accessToken);
   } catch (err) {
-    console.error("Error fetching documents:", err);
+    console.error("Error loading documents:", err);
     container.innerHTML = `<p style="color: red;">Error loading documents.</p>`;
   }
 }
 
-// Render documents
+// Render docs (live or cached)
 function renderDocuments(docs) {
   const container = document.getElementById('documents');
   container.innerHTML = '';
@@ -139,7 +134,7 @@ function renderDocuments(docs) {
   });
 }
 
-// Cache PDFs for offline
+// Cache PDFs to IndexedDB
 async function cacheDocuments(documents, accessToken) {
   const db = await openDB();
   const tx = db.transaction('docs', 'readwrite');
@@ -148,15 +143,16 @@ async function cacheDocuments(documents, accessToken) {
 
   for (const doc of documents) {
     const fileUrl = doc.webUrl;
-    if (fileUrl.endsWith('.pdf')) {
+    const fileName = doc.fields?.FileLeafRef;
+    if (fileUrl?.endsWith('.pdf')) {
       try {
-        const res = await fetch(fileUrl, {
+        const fileRes = await fetch(fileUrl, {
           headers: { Authorization: `Bearer ${accessToken}` }
         });
-        const blob = await res.blob();
-        await store.put({ name: doc.fields?.FileLeafRef, cachedBlob: blob });
+        const blob = await fileRes.blob();
+        await store.put({ name: fileName, cachedBlob: blob });
       } catch {
-        console.warn("Failed to cache:", fileUrl);
+        console.warn("Failed to cache:", fileName);
       }
     }
   }
@@ -165,27 +161,30 @@ async function cacheDocuments(documents, accessToken) {
   db.close();
 }
 
-// Load from local cache (offline)
+// Load offline
 async function loadCachedDocuments() {
   const db = await openDB();
   const tx = db.transaction('docs', 'readonly');
   const store = tx.objectStore('docs');
-  const allDocs = await store.getAll();
-  renderDocuments(allDocs.map(d => ({ name: d.name, cachedBlob: d.cachedBlob })));
+  const cached = await store.getAll();
+  renderDocuments(cached.map(doc => ({
+    name: doc.name,
+    cachedBlob: doc.cachedBlob
+  })));
   db.close();
 }
 
 // IndexedDB setup
 async function openDB() {
   return new Promise((resolve, reject) => {
-    const request = indexedDB.open('truckDocs', 1);
-    request.onupgradeneeded = event => {
-      const db = event.target.result;
+    const req = indexedDB.open('truckDocs', 1);
+    req.onupgradeneeded = e => {
+      const db = e.target.result;
       if (!db.objectStoreNames.contains('docs')) {
         db.createObjectStore('docs', { keyPath: 'name' });
       }
     };
-    request.onsuccess = () => resolve(request.result);
-    request.onerror = () => reject(request.error);
+    req.onsuccess = () => resolve(req.result);
+    req.onerror = () => reject(req.error);
   });
 }
