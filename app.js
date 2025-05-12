@@ -6,7 +6,6 @@ const msalConfig = {
     redirectUri: window.location.origin
   }
 };
-
 const msalInstance = new msal.PublicClientApplication(msalConfig);
 
 // SharePoint Info
@@ -15,7 +14,18 @@ const driveId = 'b!Dmh0lrKvV0acNe6u8TLQro_6u6ZWNRZKpCudYcF2ruoGU9HaWtzKSqyoi4uMN
 
 // DOM Ready
 document.addEventListener('DOMContentLoaded', () => {
-  document.getElementById('signin-btn').addEventListener('click', async () => {
+  const button = document.getElementById('signin-btn');
+  const banner = document.getElementById('offline-banner');
+
+  const updateBanner = () => {
+    banner.style.display = navigator.onLine ? 'none' : 'block';
+  };
+
+  updateBanner();
+  window.addEventListener('online', updateBanner);
+  window.addEventListener('offline', updateBanner);
+
+  button.addEventListener('click', async () => {
     if (!navigator.onLine) {
       console.warn("Offline mode: loading cached documents");
       loadCachedDocuments();
@@ -25,22 +35,7 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 });
 
-// Show/hide offline banner
-function updateOfflineBanner() {
-  const banner = document.getElementById('offline-banner');
-  if (!navigator.onLine) {
-    banner.style.display = 'block';
-  } else {
-    banner.style.display = 'none';
-  }
-}
-
-window.addEventListener('online', updateOfflineBanner);
-window.addEventListener('offline', updateOfflineBanner);
-updateOfflineBanner(); // call on load
-
-
-// Microsoft Sign-In
+// Sign in and fetch documents
 async function signIn() {
   try {
     const loginResponse = await msalInstance.loginPopup({
@@ -70,19 +65,19 @@ async function signIn() {
   }
 }
 
-// Get assigned truck
+// Azure Function: Get Truck #
 async function getTruckFromDriver(driverName) {
   try {
     const response = await fetch(`https://truckdocs-api.azurewebsites.net/api/getAssignedTruck?driver=${encodeURIComponent(driverName)}`);
     const data = await response.json();
     return data.truckNumber;
   } catch (error) {
-    console.error("Error fetching truck assignment:", error);
+    console.error("Truck lookup error:", error);
     return null;
   }
 }
 
-// Fetch SharePoint docs + cache
+// Fetch & Cache Truck Docs
 async function fetchTruckDocuments(truckNumber, accessToken) {
   const container = document.getElementById('documents');
   container.innerHTML = `<p>Loading documents for truck ${truckNumber}...</p>`;
@@ -102,22 +97,22 @@ async function fetchTruckDocuments(truckNumber, accessToken) {
         assetField === truckNumber ||
         assetField?.LookupValue === truckNumber ||
         assetField?.LookupId == truckNumber ||
-        (Array.isArray(assetField) && assetField.some(entry =>
-          entry.LookupValue === truckNumber || entry.LookupId == truckNumber))
+        (Array.isArray(assetField) &&
+          assetField.some(entry => entry.LookupValue === truckNumber || entry.LookupId == truckNumber))
       );
 
       return matchesTruck || forAllAssets;
     }) || [];
 
     renderDocuments(filteredDocs);
-    await cacheDocuments(filteredDocs, accessToken); // ✅ cache for offline
+    await cacheDocuments(filteredDocs, accessToken);
   } catch (err) {
-    console.error("Error loading documents:", err);
+    console.error("Error fetching documents:", err);
     container.innerHTML = `<p style="color: red;">Error loading documents.</p>`;
   }
 }
 
-// Render documents (live or cached)
+// Render documents
 function renderDocuments(docs) {
   const container = document.getElementById('documents');
   container.innerHTML = '';
@@ -144,7 +139,7 @@ function renderDocuments(docs) {
   });
 }
 
-// Cache PDFs to IndexedDB
+// Cache PDFs for offline
 async function cacheDocuments(documents, accessToken) {
   const db = await openDB();
   const tx = db.transaction('docs', 'readwrite');
@@ -155,12 +150,12 @@ async function cacheDocuments(documents, accessToken) {
     const fileUrl = doc.webUrl;
     if (fileUrl.endsWith('.pdf')) {
       try {
-        const fileRes = await fetch(fileUrl, {
+        const res = await fetch(fileUrl, {
           headers: { Authorization: `Bearer ${accessToken}` }
         });
-        const blob = await fileRes.blob();
+        const blob = await res.blob();
         await store.put({ name: doc.fields?.FileLeafRef, cachedBlob: blob });
-      } catch (e) {
+      } catch {
         console.warn("Failed to cache:", fileUrl);
       }
     }
@@ -170,7 +165,7 @@ async function cacheDocuments(documents, accessToken) {
   db.close();
 }
 
-// Load from cache (offline)
+// Load from local cache (offline)
 async function loadCachedDocuments() {
   const db = await openDB();
   const tx = db.transaction('docs', 'readonly');
@@ -180,13 +175,17 @@ async function loadCachedDocuments() {
   db.close();
 }
 
-// IndexedDB helpers using idb
+// IndexedDB setup
 async function openDB() {
-  return await window.indexedDB.open('truckDocs', 1, {
-    upgrade(db) {
+  return new Promise((resolve, reject) => {
+    const request = indexedDB.open('truckDocs', 1);
+    request.onupgradeneeded = event => {
+      const db = event.target.result;
       if (!db.objectStoreNames.contains('docs')) {
         db.createObjectStore('docs', { keyPath: 'name' });
       }
-    }
+    };
+    request.onsuccess = () => resolve(request.result);
+    request.onerror = () => reject(request.error);
   });
 }
