@@ -1,3 +1,52 @@
+const API_BASE =
+  location.hostname === "localhost"
+    ? "http://localhost:7071/api"
+    : "https://truckdocs-api.azurewebsites.net/api";
+
+function getOrCreateDeviceInstallId() {
+  const key = "truckdocs_device_install_id";
+  let id = localStorage.getItem(key);
+  if (!id) {
+    id = crypto.randomUUID();
+    localStorage.setItem(key, id);
+  }
+  return id;
+}
+
+async function getTruckNumberForThisTablet() {
+  const deviceInstallId = getOrCreateDeviceInstallId();
+
+  const resolveRes = await fetch(`${API_BASE}/resolveDeviceTruck`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ deviceInstallId })
+  });
+  const resolveData = await resolveRes.json();
+
+  if (resolveData.status === "assigned") {
+    return resolveData.truckNumber;
+  }
+
+  const truckNumber = prompt("This tablet is not assigned. Enter Truck Number:");
+  if (!truckNumber) throw new Error("Truck number required");
+
+  const pin = prompt("Enter enrollment PIN:");
+  if (!pin) throw new Error("PIN required");
+
+  const assignRes = await fetch(`${API_BASE}/assignDeviceTruck`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ deviceInstallId, truckNumber, pin })
+  });
+
+  const assignData = await assignRes.json();
+  if (assignData.status !== "assigned") {
+    throw new Error(assignData.error || "Assignment failed");
+  }
+
+  return assignData.truckNumber;
+}
+
 // MSAL Configuration
 const msalConfig = {
   auth: {
@@ -47,7 +96,7 @@ async function signIn() {
     const accessToken = tokenResponse.accessToken;
     const fullName = account.name;
 
-    const truckNumber = await getTruckFromDriver(fullName);
+    const truckNumber = await getTruckNumberForThisTablet();
     if (!truckNumber || truckNumber === "Unknown") {
       alert("Could not find your assigned truck.");
       return;
@@ -63,7 +112,7 @@ async function signIn() {
 // Azure Function: Get truck from driver name
 async function getTruckFromDriver(driverName) {
   try {
-    const response = await fetch(`https://truckdocs-api.azurewebsites.net/api/getAssignedTruck?driver=${encodeURIComponent(driverName)}`);
+    const response = await fetch(`${API_BASE}/getAssignedTruck?driver=${encodeURIComponent(driverName)}`);
     const data = await response.json();
     return data.truckNumber;
   } catch (error) {
