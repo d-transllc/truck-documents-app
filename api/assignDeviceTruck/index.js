@@ -1,3 +1,7 @@
+// Polyfill global crypto for Azure SDK in Functions runtime
+const nodeCrypto = require("crypto");
+global.crypto = global.crypto || nodeCrypto.webcrypto;
+
 const { TableClient } = require("@azure/data-tables");
 
 module.exports = async function (context, req) {

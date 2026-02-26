@@ -7,18 +7,73 @@
   <script src="https://alcdn.msauth.net/browser/2.32.0/js/msal-browser.min.js"></script> <!-- MSAL -->
 </head>
 <body>
-  <div id="app">
-    <h1>Digital Truck Book</h1>
-	
-	<div id="offline-banner" style="display: none; background: #ffcc00; color: black; padding: 10px; margin-bottom: 15px; border-radius: 6px;">
-	  You are offline. Showing last saved truck documents.
-	</div>
+  <div class="app">
+    <header class="topbar">
+      <div class="brand">
+        <img src="logo.png" alt="D-Trans" class="logo" />
+        <div>
+          <div class="title">Truck Documents</div>
+          <div class="subtitle">Secure access to your truck book</div>
+        </div>
+      </div>
 
-    <div id="login-section">
-      <button id="signin-btn">Sign In & Load Truck Documents</button>
+      <div class="topbar-actions">
+        <button id="signInBtn" class="btn btn-primary">
+          Sign in & Load Documents
+        </button>
+      </div>
+    </header>
+
+    <main class="content">
+      <section class="status-card">
+        <div id="status" class="status-text">Ready.</div>
+        <div id="statusMeta" class="status-meta"></div>
+      </section>
+
+      <section class="docs-section">
+        <div class="section-head">
+          <h2>Documents</h2>
+          <div class="pill" id="truckPill" style="display:none;"></div>
+        </div>
+
+        <div id="docsContainer" class="docs-grid"></div>
+
+        <div id="emptyState" class="empty" style="display:none;">
+          No documents found for this truck.
+        </div>
+      </section>
+    </main>
+
+    <div id="toast" class="toast" style="display:none;"></div>
+  </div>
+
+  <!-- Enrollment Modal -->
+  <div id="enrollModal" class="modal" style="display:none;">
+    <div class="modal-backdrop"></div>
+    <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="enrollTitle">
+      <div class="modal-head">
+        <h3 id="enrollTitle">Assign this tablet</h3>
+        <button id="enrollClose" class="icon-btn" aria-label="Close">✕</button>
+      </div>
+
+      <p class="muted">
+        This device isn’t assigned yet. Enter the truck number and enrollment PIN.
+      </p>
+
+      <div class="form">
+        <label class="label">Truck number</label>
+        <input id="truckInput" class="input" inputmode="numeric" placeholder="e.g. 101" />
+
+        <label class="label">Enrollment PIN</label>
+        <input id="pinInput" class="input" inputmode="numeric" type="password" placeholder="PIN" />
+
+        <button id="enrollSubmit" class="btn btn-primary btn-block">
+          Assign & Continue
+        </button>
+
+        <div id="enrollError" class="error" style="display:none;"></div>
+      </div>
     </div>
-
-    <div id="documents"></div>
   </div>
 
   <script src="app.js"></script>
