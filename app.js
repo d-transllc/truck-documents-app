@@ -13,6 +13,12 @@ function getOrCreateDeviceInstallId() {
   return id;
 }
 
+async function readJsonOrText(res) {
+  const text = await res.text();
+  try { return text ? JSON.parse(text) : null; }
+  catch { return { error: text || `HTTP ${res.status}` }; }
+}
+
 async function getTruckNumberForThisTablet() {
   const deviceInstallId = getOrCreateDeviceInstallId();
 
@@ -21,11 +27,14 @@ async function getTruckNumberForThisTablet() {
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ deviceInstallId })
   });
-  const resolveData = await resolveRes.json();
 
-  if (resolveData.status === "assigned") {
-    return resolveData.truckNumber;
+  const resolveData = await readJsonOrText(resolveRes);
+
+  if (!resolveRes.ok) {
+    throw new Error(resolveData?.error || `resolveDeviceTruck failed (${resolveRes.status})`);
   }
+
+  if (resolveData?.status === "assigned") return resolveData.truckNumber;
 
   const truckNumber = prompt("This tablet is not assigned. Enter Truck Number:");
   if (!truckNumber) throw new Error("Truck number required");
