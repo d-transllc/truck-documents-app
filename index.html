@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Truck Documents</title>
+  <link rel="stylesheet" href="style.css" />
+  <script src="https://alcdn.msauth.net/browser/2.32.0/js/msal-browser.min.js"></script> <!-- MSAL -->
+</head>
+<body>
+  <div id="app">
+    <h1>Digital Truck Book</h1>
+	
+	<div id="offline-banner" style="display: none; background: #ffcc00; color: black; padding: 10px; margin-bottom: 15px; border-radius: 6px;">
+	  You are offline. Showing last saved truck documents.
+	</div>
+
+    <div id="login-section">
+      <button id="signin-btn">Sign In & Load Truck Documents</button>
+    </div>
+
+    <div id="documents"></div>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
