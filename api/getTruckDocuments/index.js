@@ -1,8 +1,8 @@
 module.exports = async function (context, req) {
   try {
-    const truckNumber = req.query.truck;
+    const truckNumber = (req.query.truck || "").trim();
     if (!truckNumber) {
-      context.res = { status: 400, body: "Missing truck query parameter." };
+      context.res = { status: 400, body: { error: "Missing truck query parameter." } };
       return;
     }
 
@@ -11,6 +11,15 @@ module.exports = async function (context, req) {
     const clientSecret = process.env["GRAPH_CLIENT_SECRET"];
     const siteId = process.env["GRAPH_SITE_ID"];
     const driveId = process.env["GRAPH_DRIVE_ID"];
+
+    if (!tenantId || !clientId || !clientSecret || !siteId || !driveId) {
+      context.res = {
+        status: 500,
+        headers: { "Content-Type": "application/json" },
+        body: { error: "Server misconfiguration: missing Graph env vars." }
+      };
+      return;
+    }
 
     context.log("🔐 Requesting Graph token...");
 
@@ -25,7 +34,6 @@ module.exports = async function (context, req) {
       })
     });
 
-
     if (!tokenRes.ok) {
       const errorText = await tokenRes.text();
       throw new Error(`Token request failed: ${tokenRes.status} ${errorText}`);
@@ -34,18 +42,16 @@ module.exports = async function (context, req) {
     const tokenJson = await tokenRes.json();
     const accessToken = tokenJson.access_token;
 
-    context.log("📥 Token acquired. Querying SharePoint...");
+    context.log("📥 Token acquired. Querying SharePoint list items...");
 
     const itemsRes = await fetch(
       `https://graph.microsoft.com/v1.0/sites/${siteId}/drives/${driveId}/list/items?expand=fields`,
-      {
-        headers: { Authorization: `Bearer ${accessToken}` }
-      }
+      { headers: { Authorization: `Bearer ${accessToken}` } }
     );
 
     if (!itemsRes.ok) {
       const errText = await itemsRes.text();
-      throw new Error(`Graph API error: ${itemsRes.status} ${errText}`);
+      throw new Error(`Graph API error (list items): ${itemsRes.status} ${errText}`);
     }
 
     const items = (await itemsRes.json()).value || [];
@@ -67,42 +73,51 @@ module.exports = async function (context, req) {
 
     context.log(`📄 Found ${matchingDocs.length} documents for truck ${truckNumber}`);
 
-    context.res = {
-    status: 200,
-    headers: { "Content-Type": "application/json" },
-    body: await Promise.all(
-        matchingDocs.map(async doc => {
-        // Get drive item ID using list item ID
-        const itemId = doc.id;
+    // Resolve driveItem + return usable downloadUrl
+    const results = await Promise.all(
+      matchingDocs.map(async (doc) => {
+        const itemId = doc.id; // list item id
 
         const driveItemRes = await fetch(
-            `https://graph.microsoft.com/v1.0/sites/${siteId}/drives/${driveId}/list/items/${itemId}/driveItem`,
-            {
-            headers: { Authorization: `Bearer ${accessToken}` }
-            }
+          `https://graph.microsoft.com/v1.0/sites/${siteId}/drives/${driveId}/list/items/${itemId}/driveItem`,
+          { headers: { Authorization: `Bearer ${accessToken}` } }
         );
 
         if (!driveItemRes.ok) {
-            context.log.error(`❌ Failed to resolve driveItem for ${doc.fields?.FileLeafRef}`);
-            return null;
+          context.log(`❌ Failed to resolve driveItem for listItemId=${itemId} name=${doc.fields?.FileLeafRef}`);
+          return null;
         }
 
         const driveItem = await driveItemRes.json();
 
+        // This is the key: temporary pre-authenticated URL
+        const downloadUrl = driveItem["@microsoft.graph.downloadUrl"];
+
         return {
-            name: doc.fields?.FileLeafRef,
-            downloadPath: `/drives/${driveId}/items/${driveItem.id}/content`
+          name: doc.fields?.FileLeafRef || driveItem.name || "Document",
+          // best for browser open
+          downloadUrl: downloadUrl || null,
+          // optional extras for debugging/UI
+          webUrl: driveItem.webUrl || null,
+          size: driveItem.size || null,
+          lastModifiedDateTime: driveItem.lastModifiedDateTime || null
         };
-        })
-    ).then(results => results.filter(r => r !== null))
+      })
+    );
+
+    const cleaned = results.filter(Boolean);
+
+    context.res = {
+      status: 200,
+      headers: { "Content-Type": "application/json" },
+      body: cleaned
     };
-
-
   } catch (err) {
-    context.log.error("🔥 Function error:", err.message);
+    context.log.error("🔥 Function error:", err.message || err);
     context.res = {
       status: 500,
-      body: `Internal Server Error: ${err.message}`
+      headers: { "Content-Type": "application/json" },
+      body: { error: `Internal Server Error: ${err.message || String(err)}` }
     };
   }
 };

@@ -114,68 +114,95 @@ async function fetchTruckDocuments(truckNumber) {
   setStatus(`Loaded ${docs.length} document(s) for Truck ${truckNumber}`);
 }
 
+function buildViewerUrl(url) {
+  // Best-effort: hide some PDF UI in some viewers (browser dependent)
+  // This does NOT guarantee no download UI in Safari/Chrome PDF viewers,
+  // but it avoids adding any "download" behavior from your app.
+  if (typeof url === "string" && url.toLowerCase().includes(".pdf")) {
+    if (!url.includes("#")) return `${url}#toolbar=0&navpanes=0&scrollbar=0`;
+  }
+  return url;
+}
+
+function openInViewer(url, title) {
+  const modal = $("viewerModal");
+  const frame = $("viewerFrame");
+  const titleEl = $("viewerTitle");
+
+  if (!modal || !frame) {
+    // Fallback if modal not present
+    window.open(url, "_blank", "noopener,noreferrer");
+    return;
+  }
+
+  if (titleEl) titleEl.textContent = title || "Document";
+
+  frame.src = buildViewerUrl(url);
+  modal.classList.remove("hidden");
+  modal.setAttribute("aria-hidden", "false");
+  document.body.style.overflow = "hidden";
+}
+
+function closeViewer() {
+  const modal = $("viewerModal");
+  const frame = $("viewerFrame");
+  if (!modal || !frame) return;
+
+  frame.src = "about:blank";
+  modal.classList.add("hidden");
+  modal.setAttribute("aria-hidden", "true");
+  document.body.style.overflow = "";
+}
+
 function renderDocuments(docs) {
   const container = $("documents") || $("docsContainer");
   if (!container) return;
 
   container.innerHTML = "";
 
+  const empty = $("emptyState");
   if (!docs || docs.length === 0) {
-    container.innerHTML = "<p>No documents found for this truck.</p>";
+    if (empty) empty.style.display = "block";
     return;
   }
+  if (empty) empty.style.display = "none";
 
-  // Simple modern-ish cards without needing your new CSS yet
   docs.forEach((doc) => {
     const name = doc?.name || "Document";
-    const downloadUrl = doc?.downloadUrl || doc?.url || doc?.webUrl || null;
+    const url = doc?.downloadUrl || doc?.url || doc?.webUrl || null;
     const downloadPath = doc?.downloadPath || null;
 
     const card = document.createElement("div");
-    card.style.border = "1px solid rgba(0,0,0,0.1)";
-    card.style.borderRadius = "12px";
-    card.style.padding = "12px";
-    card.style.marginBottom = "10px";
-    card.style.background = "#fff";
+    card.className = "doc-card";
 
     const title = document.createElement("div");
-    title.style.fontWeight = "600";
-    title.style.marginBottom = "6px";
+    title.className = "doc-title";
     title.textContent = name;
 
     const meta = document.createElement("div");
-    meta.style.fontSize = "12px";
-    meta.style.opacity = "0.7";
-    meta.style.marginBottom = "10px";
-    meta.textContent = downloadUrl
+    meta.className = "doc-meta";
+    meta.textContent = url
       ? "Ready"
       : downloadPath
         ? "Needs backend download link"
         : "No download info";
 
     const actions = document.createElement("div");
-    actions.style.display = "flex";
-    actions.style.gap = "8px";
+    actions.className = "doc-actions";
 
-    if (downloadUrl) {
-      const open = document.createElement("a");
-      open.href = downloadUrl;
-      open.target = "_blank";
-      open.rel = "noopener";
-      open.textContent = "Open";
-      open.style.padding = "8px 10px";
-      open.style.borderRadius = "10px";
-      open.style.background = "#2563eb";
-      open.style.color = "#fff";
-      open.style.textDecoration = "none";
-      actions.appendChild(open);
+    if (url) {
+      const openBtn = document.createElement("button");
+      openBtn.className = "btn btn-primary";
+      openBtn.type = "button";
+      openBtn.textContent = "Open";
+      openBtn.addEventListener("click", () => openInViewer(url, name));
+      actions.appendChild(openBtn);
     } else {
       const disabled = document.createElement("button");
+      disabled.className = "btn";
+      disabled.type = "button";
       disabled.textContent = "Open";
       disabled.disabled = true;
-      disabled.style.padding = "8px 10px";
-      disabled.style.borderRadius = "10px";
-      disabled.style.opacity = "0.6";
       actions.appendChild(disabled);
     }
 
@@ -220,6 +247,14 @@ document.addEventListener("DOMContentLoaded", () => {
   } else {
     console.warn("No button found. Add an element with id='signin-btn' (or signInBtn).");
   }
+
+  // Viewer close button
+  $("viewerClose")?.addEventListener("click", closeViewer);
+
+  // Escape closes viewer
+  document.addEventListener("keydown", (e) => {
+    if (e.key === "Escape") closeViewer();
+  });
 
   setStatus("Ready.");
 });

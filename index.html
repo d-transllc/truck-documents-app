@@ -2,9 +2,10 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="color-scheme" content="dark" />
   <title>Truck Documents</title>
   <link rel="stylesheet" href="style.css" />
-  <script src="https://alcdn.msauth.net/browser/2.32.0/js/msal-browser.min.js"></script> <!-- MSAL -->
 </head>
 <body>
   <div class="app">
@@ -74,6 +75,24 @@
         <div id="enrollError" class="error" style="display:none;"></div>
       </div>
     </div>
+  </div>
+
+  <!-- Document Viewer Modal -->
+  <div id="viewerModal" class="viewer hidden" aria-hidden="true">
+    <div class="viewer-header">
+      <div id="viewerTitle" class="viewer-title">Document</div>
+      <button id="viewerClose" class="btn btn-secondary viewer-close" type="button">
+        Close
+      </button>
+    </div>
+
+    <iframe
+      id="viewerFrame"
+      class="viewer-frame"
+      title="Document Viewer"
+      loading="lazy"
+      referrerpolicy="no-referrer"
+    ></iframe>
   </div>
 
   <script src="app.js"></script>
