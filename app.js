@@ -268,6 +268,9 @@ async function handleButtonClick() {
       truckEl.style.display = "inline-flex";
     }
 
+    const unBtn = $("unassignBtn");
+    if (unBtn) unBtn.style.display = "inline-flex";
+
     await fetchTruckDocuments(truckNumber);
   } catch (err) {
     setStatus("Error.");
@@ -311,6 +314,9 @@ document.addEventListener("DOMContentLoaded", () => {
         // Clear UI
         const truckPill = $("truckPill") || $("truckNumber");
         if (truckPill) truckPill.textContent = "";
+
+        const unBtn = $("unassignBtn");
+        if (unBtn) unBtn.style.display = "none";
 
         const container = $("documents") || $("docsContainer");
         if (container) container.innerHTML = "";

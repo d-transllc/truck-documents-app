@@ -15,6 +15,7 @@ module.exports = async function (context, req) {
     // ✅ must match your actual PartitionKey exactly (case-sensitive)
     const partitionKey = "DEVICE";
     const rowKey = deviceInstallId;
+    context.log("unassignDevice lookup", { partitionKey, rowKey });
 
     const entity = await table.getEntity(partitionKey, rowKey);
 
@@ -31,7 +32,12 @@ module.exports = async function (context, req) {
     };
   } catch (err) {
     if (err.statusCode === 404) {
-      context.res = { status: 404, body: "Device not found in DeviceTruckMap" };
+      // Treat "not found" as already unassigned (prevents confusing errors)
+      context.res = {
+        status: 200,
+        headers: { "Content-Type": "application/json" },
+        body: { ok: true, deviceInstallId, message: "Device was not assigned." },
+      };
       return;
     }
 
