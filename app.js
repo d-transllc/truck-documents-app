@@ -189,15 +189,34 @@ function renderDocuments(docs) {
   docs.forEach((doc) => {
     const name = doc?.name || "Document";
 
-    // ✅ NEW: Use your Azure Function "inline viewer" endpoint.
-    // This should return the PDF bytes with:
-    // Content-Disposition: inline
+    // Use your inline viewer endpoint (keep your existing API_BASE definition)
     const viewUrl = doc?.driveItemId
-      ? `${API_BASE}/viewTruckDocument?itemId=${encodeURIComponent(doc.driveItemId)}`
+      ? `${API_BASE}/api/viewTruckDocument?itemId=${encodeURIComponent(doc.driveItemId)}`
       : null;
 
     const card = document.createElement("div");
     card.className = "doc-card";
+
+    // Make the whole card clickable + keyboard accessible
+    if (viewUrl) {
+      card.classList.add("is-clickable");
+      card.setAttribute("role", "button");
+      card.setAttribute("tabindex", "0");
+      card.setAttribute("aria-label", `Open ${name}`);
+
+      const open = () => openInViewer(viewUrl, name);
+
+      card.addEventListener("click", open);
+
+      card.addEventListener("keydown", (e) => {
+        if (e.key === "Enter" || e.key === " ") {
+          e.preventDefault();
+          open();
+        }
+      });
+    } else {
+      card.classList.add("is-disabled");
+    }
 
     const title = document.createElement("div");
     title.className = "doc-title";
@@ -205,33 +224,11 @@ function renderDocuments(docs) {
 
     const meta = document.createElement("div");
     meta.className = "doc-meta";
-    meta.textContent = viewUrl ? "Ready" : "Missing driveItemId";
-
-    const actions = document.createElement("div");
-    actions.className = "doc-actions";
-
-    if (viewUrl) {
-      // Use an <a> so browsers treat it as a normal document navigation
-      // (this avoids iframe/CSP issues and is the most reliable way to view PDFs)
-      const openLink = document.createElement("a");
-      openLink.className = "btn btn-primary";
-      openLink.textContent = "Open";
-      openLink.href = viewUrl;
-      openLink.target = "_blank";
-      openLink.rel = "noopener noreferrer";
-      actions.appendChild(openLink);
-    } else {
-      const disabled = document.createElement("button");
-      disabled.className = "btn";
-      disabled.type = "button";
-      disabled.textContent = "Open";
-      disabled.disabled = true;
-      actions.appendChild(disabled);
-    }
+    meta.textContent = viewUrl ? "Tap to open" : "Missing driveItemId";
 
     card.appendChild(title);
     card.appendChild(meta);
-    card.appendChild(actions);
+
     container.appendChild(card);
   });
 }

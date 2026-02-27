@@ -99,9 +99,32 @@ body{
   transition: transform .12s ease, border-color .12s ease;
 }
 .doc-card:hover{transform: translateY(-2px); border-color: rgba(59,130,246,.35)}
+
+.doc-card.is-clickable{
+  cursor: pointer;
+  user-select: none;
+}
+
+.doc-card.is-clickable:active{
+  transform: scale(.99);
+}
+
+.doc-card.is-clickable:focus{
+  outline: none;
+}
+
+.doc-card.is-clickable:focus-visible{
+  box-shadow: 0 0 0 3px rgba(59,130,246,.35), var(--shadow);
+  border-color: rgba(59,130,246,.45);
+}
+
+.doc-card.is-disabled{
+  opacity: .55;
+  cursor: not-allowed;
+}
+
 .doc-title{font-weight:650; font-size:14px; line-height:1.2}
 .doc-meta{font-size:12px; color:var(--muted)}
-.doc-actions{display:flex; gap:8px; margin-top:auto}
 
 .btn{
   appearance:none;
