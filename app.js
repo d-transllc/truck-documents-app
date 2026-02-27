@@ -187,12 +187,16 @@ function renderDocuments(docs) {
 
   docs.forEach((doc) => {
     const name = doc?.name || "Document";
+    // Prefer view/preview URLs. Avoid downloadUrl unless there is nothing else.
     const url =
       doc?.viewUrl ||
       doc?.previewUrl ||
       doc?.webUrl ||
       doc?.url ||
       null;
+
+    // Keep downloadUrl only as a last-resort fallback (it often forces download)
+    const fallbackDownloadUrl = doc?.downloadUrl || doc?.downloadURL || doc?.["@microsoft.graph.downloadUrl"] || null;
     const downloadPath = doc?.downloadPath || null;
 
     const card = document.createElement("div");
@@ -218,7 +222,7 @@ function renderDocuments(docs) {
       openBtn.className = "btn btn-primary";
       openBtn.type = "button";
       openBtn.textContent = "Open";
-      openBtn.addEventListener("click", () => openInViewer(url, name));
+      openBtn.addEventListener("click", () => openInViewer(url, name, fallbackDownloadUrl));
       actions.appendChild(openBtn);
     } else {
       const disabled = document.createElement("button");
