@@ -110,17 +110,14 @@ async function getTruckNumberForThisDevice() {
     return resolveData.truckNumber;
   }
 
-  // 2) Not assigned -> prompt for Truck + PIN
+  // 2) Not assigned -> prompt for Truck (NO PIN)
   const truckNumber = prompt("This tablet is not assigned.\nEnter Truck Number:");
   if (!truckNumber) throw new Error("Truck number required");
-
-  const pin = prompt("Enter enrollment PIN:");
-  if (!pin) throw new Error("PIN required");
 
   const assignRes = await fetch(`${API_BASE}/assignDeviceTruck`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ deviceInstallId, truckNumber: truckNumber.trim(), pin: pin.trim() }),
+    body: JSON.stringify({ deviceInstallId, truckNumber: truckNumber.trim() }),
   });
 
   const assignData = await readJsonOrText(assignRes);
@@ -147,6 +144,23 @@ async function unassignThisDevice() {
 
   const data = await readJsonOrText(res);
   if (!res.ok) throw new Error(data?.error || data?.message || `Unassign failed (${res.status})`);
+  return data;
+}
+
+// ============================
+// Assign (Device -> Truck)  (NO PIN)
+// ============================
+async function assignThisDeviceToTruck(truckNumber) {
+  const deviceInstallId = getOrCreateDeviceInstallId();
+
+  const res = await fetch(`${API_BASE}/assignDeviceTruck`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ deviceInstallId, truckNumber: (truckNumber || "").trim() }),
+  });
+
+  const data = await readJsonOrText(res);
+  if (!res.ok) throw new Error(data?.error || data?.message || `Assign failed (${res.status})`);
   return data;
 }
 
@@ -339,46 +353,45 @@ document.addEventListener("DOMContentLoaded", () => {
   // Optional: Unassign button (add a button with id="unassignBtn" in index.html)
   const unassignBtn = $("unassignBtn");
   if (unassignBtn) {
+    // Rename the button
+    unassignBtn.textContent = "Change truck";
+
     unassignBtn.addEventListener("click", async () => {
       try {
-        const ok = confirm(
-          "Unassign this tablet from its truck?\n\nYou will need the enrollment PIN to assign it again."
-        );
-        if (!ok) return;
-
-        setStatus("Unassigning tablet...");
-        const result = await unassignThisDevice();
-
-        // Clear ALL possible truck UI elements (not just the first match)
-        const truckPill = $("truckPill");
-        if (truckPill) {
-          truckPill.textContent = "";
-          truckPill.style.display = "none";
+        // Prompt first so we don't unassign if they cancel
+        const nextTruck = (prompt("Enter the NEW truck number:", "") || "").trim();
+        if (!nextTruck) {
+          showToast("Cancelled. Truck was not changed.", "info");
+          return;
         }
 
-        const truckNumberEl = $("truckNumber");
-        if (truckNumberEl) {
-          truckNumberEl.textContent = "";
-          truckNumberEl.style.display = "none";
+        setStatus("Changing truck...");
+
+        // 1) Unassign old truck
+        await unassignThisDevice();
+
+        // 2) Assign new truck (NO PIN)
+        const assignResult = await assignThisDeviceToTruck(nextTruck);
+
+        // 3) Update UI to show the new truck
+        const truckEl = $("truckNumber") || $("truckPill");
+        if (truckEl) {
+          truckEl.textContent = `Truck ${nextTruck}`;
+          truckEl.style.display = "inline-flex";
         }
 
-        // Hide unassign button
-        const unBtn = $("unassignBtn");
-        if (unBtn) unBtn.style.display = "none";
+        // Keep Change Truck button visible
+        unassignBtn.style.display = "inline-flex";
 
-        // Clear docs
-        const container = $("documents") || $("docsContainer");
-        if (container) container.innerHTML = "";
+        // 4) Reload docs immediately for the new truck
+        await fetchTruckDocuments(nextTruck);
 
-        const empty = $("emptyState");
-        if (empty) empty.style.display = "block";
-
-        // Smooth status/toast messaging from API response
-        const msg = result?.message || "Tablet unassigned.";
-        setStatus("Tablet unassigned. Assign a truck to load documents.");
+        const msg = assignResult?.message || `Truck changed to ${nextTruck}.`;
+        setStatus(msg);
         showToast(msg, "success");
       } catch (err) {
         showError(err?.message || String(err));
+        setStatus("Could not change truck.");
       }
     });
   }
