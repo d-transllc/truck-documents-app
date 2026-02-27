@@ -304,16 +304,16 @@ document.addEventListener("DOMContentLoaded", () => {
     unassignBtn.addEventListener("click", async () => {
       try {
         const ok = confirm(
-          "Unassign this tablet from its truck?\n\nAfter unassigning, you will need the enrollment PIN to assign it again."
+          "Unassign this tablet from its truck?\n\nYou will need the enrollment PIN to assign it again."
         );
         if (!ok) return;
 
-        setStatus("Unassigning this tablet…");
+        setStatus("Unassigning tablet...");
         await unassignThisDevice();
 
         // Clear UI
-        const truckEl = $("truckNumber") || $("truckPill");
-        if (truckEl) truckEl.style.display = "none";
+        const truckPill = $("truckPill") || $("truckNumber");
+        if (truckPill) truckPill.textContent = "";
 
         const container = $("documents") || $("docsContainer");
         if (container) container.innerHTML = "";
@@ -321,10 +321,11 @@ document.addEventListener("DOMContentLoaded", () => {
         const empty = $("emptyState");
         if (empty) empty.style.display = "block";
 
-        setStatus("Tablet unassigned. Tap Load Documents to assign to a truck.");
+        setStatus("Tablet unassigned. Assign a truck to load documents.");
+        showToast("Tablet unassigned.");
       } catch (err) {
-        setStatus("Error.");
         showError(err?.message || String(err));
+        setStatus("Error.");
       }
     });
   }
