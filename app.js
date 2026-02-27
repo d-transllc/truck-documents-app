@@ -124,23 +124,41 @@ function buildViewerUrl(url) {
   return url;
 }
 
-function openInViewer(url, title) {
-  const modal = $("viewerModal");
-  const frame = $("viewerFrame");
-  const titleEl = $("viewerTitle");
+function openInViewer(url, title, fallbackDownloadUrl) {
+  if (!url && fallbackDownloadUrl) url = fallbackDownloadUrl;
 
+  const modal = document.getElementById("viewerModal");
+  const frame = document.getElementById("viewerFrame");
+  const titleEl = document.getElementById("viewerTitle");
+  const openNewTabBtn = document.getElementById("viewerOpenNewTab");
+
+  if (!url) {
+    alert("No viewable URL for this document.");
+    return;
+  }
+
+  // Update UI
+  if (titleEl) titleEl.textContent = title || "Document";
+  if (openNewTabBtn) {
+    openNewTabBtn.onclick = () => window.open(url, "_blank", "noopener,noreferrer");
+  }
+
+  // If we don't have modal elements, just open a new tab
   if (!modal || !frame) {
-    // Fallback if modal not present
     window.open(url, "_blank", "noopener,noreferrer");
     return;
   }
 
-  if (titleEl) titleEl.textContent = title || "Document";
-
-  frame.src = buildViewerUrl(url);
+  // Show modal
   modal.classList.remove("hidden");
   modal.setAttribute("aria-hidden", "false");
   document.body.style.overflow = "hidden";
+
+  // Try iframe first
+  frame.src = buildViewerUrl(url);
+
+  // If iframe fails due to X-Frame-Options/CSP/attachment, user can still open new tab.
+  // Some browsers won't fire a useful error event; so we just keep the "Open in new tab" available.
 }
 
 function closeViewer() {
@@ -169,7 +187,12 @@ function renderDocuments(docs) {
 
   docs.forEach((doc) => {
     const name = doc?.name || "Document";
-    const url = doc?.downloadUrl || doc?.url || doc?.webUrl || null;
+    const url =
+      doc?.viewUrl ||
+      doc?.previewUrl ||
+      doc?.webUrl ||
+      doc?.url ||
+      null;
     const downloadPath = doc?.downloadPath || null;
 
     const card = document.createElement("div");
