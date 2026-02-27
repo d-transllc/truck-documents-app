@@ -174,6 +174,7 @@ function closeViewer() {
 
 function renderDocuments(docs) {
   console.log("renderDocuments running - BUILD 2026-02-27", { API_BASE });
+
   const container = $("documents") || $("docsContainer");
   if (!container) return;
 
@@ -189,22 +190,22 @@ function renderDocuments(docs) {
   docs.forEach((doc) => {
     const name = doc?.name || "Document";
 
-    // Use your inline viewer endpoint (keep your existing API_BASE definition)
     const viewUrl = doc?.driveItemId
-      ? `${API_BASE}/api/viewTruckDocument?itemId=${encodeURIComponent(doc.driveItemId)}`
+      ? `${API_BASE}/viewTruckDocument?itemId=${encodeURIComponent(doc.driveItemId)}`
       : null;
 
     const card = document.createElement("div");
     card.className = "doc-card";
 
-    // Make the whole card clickable + keyboard accessible
     if (viewUrl) {
       card.classList.add("is-clickable");
       card.setAttribute("role", "button");
       card.setAttribute("tabindex", "0");
       card.setAttribute("aria-label", `Open ${name}`);
 
-      const open = () => openInViewer(viewUrl, name);
+      const open = () => {
+        window.open(viewUrl, "_blank", "noopener,noreferrer");
+      };
 
       card.addEventListener("click", open);
 
