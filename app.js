@@ -187,17 +187,13 @@ function renderDocuments(docs) {
 
   docs.forEach((doc) => {
     const name = doc?.name || "Document";
-    // Prefer view/preview URLs. Avoid downloadUrl unless there is nothing else.
-    const url =
-      doc?.viewUrl ||
-      doc?.previewUrl ||
-      doc?.webUrl ||
-      doc?.url ||
-      null;
 
-    // Keep downloadUrl only as a last-resort fallback (it often forces download)
-    const fallbackDownloadUrl = doc?.downloadUrl || doc?.downloadURL || doc?.["@microsoft.graph.downloadUrl"] || null;
-    const downloadPath = doc?.downloadPath || null;
+    // ✅ NEW: Use your Azure Function "inline viewer" endpoint.
+    // This should return the PDF bytes with:
+    // Content-Disposition: inline
+    const viewUrl = doc?.driveItemId
+      ? `/api/viewTruckDocument?itemId=${encodeURIComponent(doc.driveItemId)}`
+      : null;
 
     const card = document.createElement("div");
     card.className = "doc-card";
@@ -208,22 +204,21 @@ function renderDocuments(docs) {
 
     const meta = document.createElement("div");
     meta.className = "doc-meta";
-    meta.textContent = url
-      ? "Ready"
-      : downloadPath
-        ? "Needs backend download link"
-        : "No download info";
+    meta.textContent = viewUrl ? "Ready" : "Missing driveItemId";
 
     const actions = document.createElement("div");
     actions.className = "doc-actions";
 
-    if (url) {
-      const openBtn = document.createElement("button");
-      openBtn.className = "btn btn-primary";
-      openBtn.type = "button";
-      openBtn.textContent = "Open";
-      openBtn.addEventListener("click", () => openInViewer(url, name, fallbackDownloadUrl));
-      actions.appendChild(openBtn);
+    if (viewUrl) {
+      // Use an <a> so browsers treat it as a normal document navigation
+      // (this avoids iframe/CSP issues and is the most reliable way to view PDFs)
+      const openLink = document.createElement("a");
+      openLink.className = "btn btn-primary";
+      openLink.textContent = "Open";
+      openLink.href = viewUrl;
+      openLink.target = "_blank";
+      openLink.rel = "noopener noreferrer";
+      actions.appendChild(openLink);
     } else {
       const disabled = document.createElement("button");
       disabled.className = "btn";

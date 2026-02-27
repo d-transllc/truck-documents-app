@@ -90,17 +90,13 @@ module.exports = async function (context, req) {
 
         const driveItem = await driveItemRes.json();
 
-        // This is the key: temporary pre-authenticated URL
-        const downloadUrl = driveItem["@microsoft.graph.downloadUrl"];
-
         return {
           name: doc.fields?.FileLeafRef || driveItem.name || "Document",
-          // best for browser open
-          downloadUrl: downloadUrl || null,
-          // optional extras for debugging/UI
-          webUrl: driveItem.webUrl || null,
+          driveItemId: driveItem.id,               // ✅ ADD THIS
+          webUrl: driveItem.webUrl || null,        // keep for debugging
           size: driveItem.size || null,
           lastModifiedDateTime: driveItem.lastModifiedDateTime || null
+          // NOTE: remove downloadUrl to prevent forced downloads
         };
       })
     );
