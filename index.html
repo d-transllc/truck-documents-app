@@ -81,9 +81,15 @@
   <div id="viewerModal" class="viewer hidden" aria-hidden="true">
     <div class="viewer-header">
       <div id="viewerTitle" class="viewer-title">Document</div>
-      <button id="viewerClose" class="btn btn-secondary viewer-close" type="button">
-        Close
-      </button>
+
+      <div style="display:flex; gap:10px; align-items:center;">
+        <button id="viewerOpenNewTab" class="btn btn-secondary" type="button">
+          Open in new tab
+        </button>
+        <button id="viewerClose" class="btn btn-secondary viewer-close" type="button">
+          Close
+        </button>
+      </div>
     </div>
 
     <iframe
