@@ -173,6 +173,7 @@ function closeViewer() {
 }
 
 function renderDocuments(docs) {
+  console.log("renderDocuments running - BUILD 2026-02-27", { API_BASE });
   const container = $("documents") || $("docsContainer");
   if (!container) return;
 
