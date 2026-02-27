@@ -13,11 +13,8 @@ module.exports = async function (context, req) {
       return;
     }
 
-    const expectedPin = process.env.DEVICE_ENROLL_PIN;
-    if (expectedPin && pin !== expectedPin) {
-      context.res = { status: 401, body: { error: "Invalid PIN" } };
-      return;
-    }
+    // Enrollment PIN removed — do not require pin
+    // (You can keep DEVICE_ENROLL_PIN in settings; it will simply be ignored.)
 
     const conn = process.env.DEVICE_MAP_STORAGE_CONNECTION;
     const tableName = process.env.DEVICE_MAP_TABLE || "DeviceTruckMap";
