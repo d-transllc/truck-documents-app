@@ -98,6 +98,7 @@ async function getTruckNumberForThisDevice() {
 // ============================
 async function unassignThisDevice() {
   const deviceInstallId = getOrCreateDeviceInstallId();
+  console.log("Unassign deviceInstallId =", deviceInstallId);
 
   const res = await fetch(`${API_BASE}/unassignDevice`, {
     method: "POST",
@@ -106,11 +107,7 @@ async function unassignThisDevice() {
   });
 
   const data = await readJsonOrText(res);
-
-  if (!res.ok) {
-    throw new Error(data?.error || `unassignDevice failed (${res.status})`);
-  }
-
+  if (!res.ok) throw new Error(data?.error || data?.message || `Unassign failed (${res.status})`);
   return data;
 }
 
