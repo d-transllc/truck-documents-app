@@ -94,6 +94,27 @@ async function getTruckNumberForThisDevice() {
 }
 
 // ============================
+// Unassign (Device -> Truck)
+// ============================
+async function unassignThisDevice() {
+  const deviceInstallId = getOrCreateDeviceInstallId();
+
+  const res = await fetch(`${API_BASE}/unassignDevice`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ deviceInstallId }),
+  });
+
+  const data = await readJsonOrText(res);
+
+  if (!res.ok) {
+    throw new Error(data?.error || `unassignDevice failed (${res.status})`);
+  }
+
+  return data;
+}
+
+// ============================
 // Fetch + Render Docs (no MSAL; API does Graph auth server-side)
 // ============================
 async function fetchTruckDocuments(truckNumber) {
@@ -276,6 +297,37 @@ document.addEventListener("DOMContentLoaded", () => {
   document.addEventListener("keydown", (e) => {
     if (e.key === "Escape") closeViewer();
   });
+
+  // Optional: Unassign button (add a button with id="unassignBtn" in index.html)
+  const unassignBtn = $("unassignBtn");
+  if (unassignBtn) {
+    unassignBtn.addEventListener("click", async () => {
+      try {
+        const ok = confirm(
+          "Unassign this tablet from its truck?\n\nAfter unassigning, you will need the enrollment PIN to assign it again."
+        );
+        if (!ok) return;
+
+        setStatus("Unassigning this tablet…");
+        await unassignThisDevice();
+
+        // Clear UI
+        const truckEl = $("truckNumber") || $("truckPill");
+        if (truckEl) truckEl.style.display = "none";
+
+        const container = $("documents") || $("docsContainer");
+        if (container) container.innerHTML = "";
+
+        const empty = $("emptyState");
+        if (empty) empty.style.display = "block";
+
+        setStatus("Tablet unassigned. Tap Load Documents to assign to a truck.");
+      } catch (err) {
+        setStatus("Error.");
+        showError(err?.message || String(err));
+      }
+    });
+  }
 
   setStatus("Ready.");
 });
