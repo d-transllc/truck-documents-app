@@ -192,7 +192,7 @@ function renderDocuments(docs) {
     // This should return the PDF bytes with:
     // Content-Disposition: inline
     const viewUrl = doc?.driveItemId
-      ? `/api/viewTruckDocument?itemId=${encodeURIComponent(doc.driveItemId)}`
+      ? `${API_BASE}/api/viewTruckDocument?itemId=${encodeURIComponent(doc.driveItemId)}`
       : null;
 
     const card = document.createElement("div");
