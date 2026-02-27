@@ -21,9 +21,48 @@ function setStatus(message) {
   console.log("[status]", message);
 }
 
+function showToast(message, type = "info") {
+  // type: "info" | "success" | "error"
+  let el = document.getElementById("toast");
+  if (!el) {
+    el = document.createElement("div");
+    el.id = "toast";
+    el.style.position = "fixed";
+    el.style.left = "50%";
+    el.style.bottom = "18px";
+    el.style.transform = "translateX(-50%)";
+    el.style.padding = "10px 14px";
+    el.style.borderRadius = "10px";
+    el.style.boxShadow = "0 6px 20px rgba(0,0,0,0.2)";
+    el.style.fontSize = "14px";
+    el.style.zIndex = "9999";
+    el.style.maxWidth = "92vw";
+    el.style.whiteSpace = "pre-wrap";
+    el.style.display = "none";
+    document.body.appendChild(el);
+  }
+
+  const bg =
+    type === "success" ? "#0f766e" :
+    type === "error" ? "#b91c1c" :
+    "#111827";
+
+  el.style.background = bg;
+  el.style.color = "white";
+  el.textContent = message;
+  el.style.display = "block";
+
+  clearTimeout(el._hideTimer);
+  el._hideTimer = setTimeout(() => {
+    el.style.display = "none";
+  }, 2600);
+}
+
 function showError(message) {
-  console.error(message);
-  alert(message);
+  const msg = message || "Something went wrong.";
+  console.error(msg);
+  setStatus(msg);              // show error in your status line (smooth)
+  showToast(msg, "error");     // toast instead of alert (no annoying popups)
 }
 
 async function readJsonOrText(res) {
@@ -273,7 +312,6 @@ async function handleButtonClick() {
 
     await fetchTruckDocuments(truckNumber);
   } catch (err) {
-    setStatus("Error.");
     showError(err?.message || String(err));
   }
 }
@@ -309,26 +347,38 @@ document.addEventListener("DOMContentLoaded", () => {
         if (!ok) return;
 
         setStatus("Unassigning tablet...");
-        await unassignThisDevice();
+        const result = await unassignThisDevice();
 
-        // Clear UI
-        const truckPill = $("truckPill") || $("truckNumber");
-        if (truckPill) truckPill.textContent = "";
+        // Clear ALL possible truck UI elements (not just the first match)
+        const truckPill = $("truckPill");
+        if (truckPill) {
+          truckPill.textContent = "";
+          truckPill.style.display = "none";
+        }
 
+        const truckNumberEl = $("truckNumber");
+        if (truckNumberEl) {
+          truckNumberEl.textContent = "";
+          truckNumberEl.style.display = "none";
+        }
+
+        // Hide unassign button
         const unBtn = $("unassignBtn");
         if (unBtn) unBtn.style.display = "none";
 
+        // Clear docs
         const container = $("documents") || $("docsContainer");
         if (container) container.innerHTML = "";
 
         const empty = $("emptyState");
         if (empty) empty.style.display = "block";
 
+        // Smooth status/toast messaging from API response
+        const msg = result?.message || "Tablet unassigned.";
         setStatus("Tablet unassigned. Assign a truck to load documents.");
-        showToast("Tablet unassigned.");
+        showToast(msg, "success");
       } catch (err) {
         showError(err?.message || String(err));
-        setStatus("Error.");
       }
     });
   }
