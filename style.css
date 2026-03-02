@@ -213,21 +213,50 @@ body{
   inset: 0;
   background: rgba(0, 0, 0, 0.5);
 }
-.modal-card {
+.modal-card{
   position: relative;
-  background: #fff;
-  width: 90%;
-  max-width: 420px;
-  border-radius: 12px;
-  padding: 24px;
-  box-shadow: 0 20px 40px rgba(0,0,0,0.2);
+  width: min(520px, 92vw);
+  max-width: 520px;
+  border-radius: 18px;
+  padding: 20px 20px 18px;
   z-index: 1;
+
+  background: linear-gradient(180deg, rgba(17,26,46,.96), rgba(15,23,42,.96));
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow);
+  color: var(--text);
 }
 .modal-head{
   display:flex; align-items:center; justify-content:space-between;
   gap:10px;
 }
 .modal-head h3{margin:0; font-size:18px} /* ✅ bigger */
+
+.modal{ padding: 16px; } /* keeps it from feeling “stuck” to edges on tablets */
+
+.modal-head h3{
+  color: var(--text);
+}
+
+.modal .muted{
+  color: var(--muted);
+}
+
+.modal .label{
+  color: var(--muted);
+}
+
+/* Close button inside the modal */
+.modal .icon-btn{
+  background: rgba(255,255,255,.06);
+  border-color: var(--border);
+}
+.modal .icon-btn:active{ transform: scale(.98); }
+
+/* Placeholder contrast */
+.modal .input::placeholder{
+  color: rgba(148,163,184,.65);
+}
 
 /* Fullscreen viewer (tablet/phone friendly) */
 .viewer.hidden { display: none; }
