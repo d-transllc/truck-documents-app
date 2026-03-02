@@ -274,3 +274,26 @@ body{
   .btn{ padding: 16px 16px; font-size: 16px; }
   .input{ padding: 16px 16px; font-size: 16px; }
 }
+
+/* Touch tablets (Android/iPad) even when viewport is wide */
+@media (hover: none) and (pointer: coarse) and (min-width: 901px) {
+  body { font-size: 21px; }
+
+  .topbar { padding: 22px 24px; }
+  .title { font-size: 22px; }
+  .subtitle { font-size: 16px; }
+
+  .btn { padding: 18px 20px; font-size: 18px; }
+  .icon-btn { width: 52px; height: 52px; }
+
+  .input { padding: 18px 20px; font-size: 18px; }
+
+  .status-card { padding: 18px; }
+  .status-text { font-size: 18px; }
+  .status-meta { font-size: 16px; }
+
+  .section-head h2 { font-size: 22px; }
+  .pill { padding: 10px 16px; font-size: 16px; }
+  .doc-title { font-size: 18px; }
+  .doc-meta { font-size: 16px; }
+}
