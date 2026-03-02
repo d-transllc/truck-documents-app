@@ -65,6 +65,88 @@ function showError(message) {
   showToast(msg, "error");     // toast instead of alert (no annoying popups)
 }
 
+// ============================
+// In-app modal prompt replacement (Truck Number)
+// ============================
+function openTruckNumberModal({ title, subtitle, buttonText } = {}) {
+  const modal = $("enrollModal");
+  const titleEl = $("enrollTitle");
+  const subtitleEl = $("enrollSubtitle");
+  const input = $("truckInput");
+  const submitBtn = $("enrollSubmit");
+  const closeBtn = $("enrollClose");
+  const errorEl = $("enrollError");
+
+  const backdrop = modal ? modal.querySelector(".modal-backdrop") : null;
+
+  if (!modal || !input || !submitBtn) {
+    // Fallback (should not happen if modal exists)
+    return Promise.resolve(null);
+  }
+
+  if (titleEl && title) titleEl.textContent = title;
+  if (subtitleEl && subtitle) subtitleEl.textContent = subtitle;
+  if (buttonText) submitBtn.textContent = buttonText;
+
+  if (errorEl) {
+    errorEl.style.display = "none";
+    errorEl.textContent = "";
+  }
+
+  modal.style.display = "flex";
+  input.value = "";
+  setTimeout(() => input.focus(), 50);
+
+  return new Promise((resolve) => {
+    let done = false;
+
+    const cleanup = () => {
+      if (done) return;
+      done = true;
+
+      modal.style.display = "none";
+
+      submitBtn.removeEventListener("click", onSubmit);
+      closeBtn && closeBtn.removeEventListener("click", onCancel);
+      backdrop && backdrop.removeEventListener("click", onCancel);
+      document.removeEventListener("keydown", onKeyDown);
+    };
+
+    const onCancel = () => {
+      cleanup();
+      resolve(null);
+    };
+
+    const onKeyDown = (e) => {
+      if (e.key === "Escape") onCancel();
+      if (e.key === "Enter") onSubmit(e);
+    };
+
+    const onSubmit = (e) => {
+      if (e) e.preventDefault();
+
+      const truck = (input.value || "").trim();
+      if (!truck) {
+        if (errorEl) {
+          errorEl.textContent = "Truck number is required.";
+          errorEl.style.display = "block";
+        } else {
+          showToast("Truck number is required.", "error");
+        }
+        return;
+      }
+
+      cleanup();
+      resolve(truck);
+    };
+
+    submitBtn.addEventListener("click", onSubmit);
+    closeBtn && closeBtn.addEventListener("click", onCancel);
+    backdrop && backdrop.addEventListener("click", onCancel);
+    document.addEventListener("keydown", onKeyDown);
+  });
+}
+
 async function readJsonOrText(res) {
   const text = await res.text();
   try {
@@ -110,8 +192,13 @@ async function getTruckNumberForThisDevice() {
     return resolveData.truckNumber;
   }
 
-  // 2) Not assigned -> prompt for Truck (NO PIN)
-  const truckNumber = prompt("This tablet is not assigned.\nEnter Truck Number:");
+  // 2) Not assigned -> in-app modal (NO PIN)
+  const truckNumber = await openTruckNumberModal({
+    title: "Assign this tablet",
+    subtitle: "This device isn’t assigned yet. Enter the truck number.",
+    buttonText: "Assign & Continue",
+  });
+
   if (!truckNumber) throw new Error("Truck number required");
 
   const assignRes = await fetch(`${API_BASE}/assignDeviceTruck`, {
@@ -204,7 +291,7 @@ function openInViewer(url, title, fallbackDownloadUrl) {
   const openNewTabBtn = document.getElementById("viewerOpenNewTab");
 
   if (!url) {
-    alert("No viewable URL for this document.");
+    showToast("No viewable URL for this document.", "error");
     return;
   }
 
@@ -359,7 +446,12 @@ document.addEventListener("DOMContentLoaded", () => {
     unassignBtn.addEventListener("click", async () => {
       try {
         // Prompt first so we don't unassign if they cancel
-        const nextTruck = (prompt("Enter the NEW truck number:", "") || "").trim();
+        const nextTruck = await openTruckNumberModal({
+          title: "Change truck",
+          subtitle: "Enter the NEW truck number for this tablet.",
+          buttonText: "Change Truck",
+        });
+
         if (!nextTruck) {
           showToast("Cancelled. Truck was not changed.", "info");
           return;
