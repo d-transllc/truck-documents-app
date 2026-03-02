@@ -265,7 +265,7 @@ body{
 }
 
 /* Better layout on phones */
-@media (max-width: 768px){
+@media (max-width: 900px){
   body{ font-size: 18px; }        /* ✅ bigger on mobile */
   .content{ width: min(1100px, 94vw); margin: 12px auto 22px; }
   .topbar{ padding: 16px 14px; }
