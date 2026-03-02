@@ -243,12 +243,12 @@ body{
 
 .modal .muted{
   color: var(--muted);
-  font-size: 18px;
+  font-size: 16px;
 }
 
 .modal .label{
   color: var(--muted);
-  font-size: 18px;
+  font-size: 16px;
 }
 
 /* Close button inside the modal */
