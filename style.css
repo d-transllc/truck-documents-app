@@ -200,24 +200,28 @@ body{
   font-size: 14px;            /* ✅ bigger */
 }
 
-.modal{
-  position: fixed; inset:0;
-  display:grid;
-  place-items:center;
-  z-index: 50;
+.modal {
+  position: fixed;
+  inset: 0;                 /* full screen */
+  display: none;            /* hidden by default */
+  align-items: center;      /* vertical center */
+  justify-content: center;  /* horizontal center */
+  z-index: 1000;
 }
-.modal-backdrop{
-  position:absolute; inset:0;
-  background: rgba(0,0,0,.55);
+.modal-backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
 }
-.modal-card{
-  position:relative;
-  width:min(520px, 92vw);     /* ✅ bigger */
-  background: rgba(17,26,46,.95);
-  border:1px solid var(--border);
-  border-radius: 18px;
-  box-shadow: var(--shadow);
-  padding:18px 18px 20px;     /* ✅ bigger */
+.modal-card {
+  position: relative;
+  background: #fff;
+  width: 90%;
+  max-width: 420px;
+  border-radius: 12px;
+  padding: 24px;
+  box-shadow: 0 20px 40px rgba(0,0,0,0.2);
+  z-index: 1;
 }
 .modal-head{
   display:flex; align-items:center; justify-content:space-between;
